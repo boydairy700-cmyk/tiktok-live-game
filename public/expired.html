@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>انتهى الاشتراك | Subscription Expired</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/style.css">
+    <style>
+        :root {
+            --danger: #ff4b2b;
+            --danger-glow: #e94560;
+            --bg-dark: #05010a;
+            --success: #00ff88;
+        }
+
+        body {
+            font-family: 'Cairo', sans-serif;
+            background: var(--bg-dark);
+            color: #fff;
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-image: radial-gradient(circle at center, rgba(255, 75, 43, 0.15), transparent 60%);
+            overflow: hidden;
+        }
+
+        .expired-card {
+            background: rgba(20, 20, 35, 0.85);
+            backdrop-filter: blur(15px);
+            border: 2px solid rgba(255, 75, 43, 0.5);
+            border-radius: 25px;
+            padding: 50px 40px;
+            text-align: center;
+            max-width: 500px;
+            width: 90%;
+            box-shadow: 0 0 50px rgba(255, 75, 43, 0.2), inset 0 0 20px rgba(255, 75, 43, 0.1);
+            animation: slideUp 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+            position: relative;
+        }
+
+        @keyframes slideUp {
+            0% { transform: translateY(100px) scale(0.9); opacity: 0; }
+            100% { transform: translateY(0) scale(1); opacity: 1; }
+        }
+
+        .warning-icon {
+            font-size: 60px;
+            margin-bottom: 20px;
+            animation: pulse 2s infinite alternate;
+        }
+
+        @keyframes pulse {
+            0% { text-shadow: 0 0 10px var(--danger); transform: scale(1); }
+            100% { text-shadow: 0 0 30px var(--danger), 0 0 50px var(--danger); transform: scale(1.1); }
+        }
+
+        h1 {
+            margin: 0 0 15px 0;
+            font-weight: 900;
+            font-size: 32px;
+            color: var(--danger);
+        }
+
+        p {
+            font-size: 18px;
+            color: #ddd;
+            margin-bottom: 40px;
+            line-height: 1.6;
+        }
+
+        .buttons {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+        }
+
+        .btn {
+            padding: 15px 30px;
+            border-radius: 12px;
+            border: none;
+            font-family: 'Cairo', sans-serif;
+            font-size: 18px;
+            font-weight: 900;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn-yes {
+            background: linear-gradient(135deg, #25D366, #128C7E);
+            color: #fff;
+            box-shadow: 0 5px 20px rgba(37, 211, 102, 0.4);
+            flex: 1;
+        }
+        .btn-yes:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(37, 211, 102, 0.6);
+        }
+
+        .btn-no {
+            background: transparent;
+            color: #888;
+            border: 2px solid #444;
+            flex: 1;
+        }
+        .btn-no:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            border-color: #888;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="expired-card">
+        <div class="warning-icon">⚠️</div>
+        <h1>انتهى الاشتراك!</h1>
+        <p>عذراً، لقد انتهت صلاحية اشتراكك في استوديو الألعاب.<br>هل تود تجديد الاشتراك؟</p>
+        
+        <div class="buttons">
+            <!-- Replace +0000000000 with actual WhatsApp number later -->
+            <a href="https://wa.me/0000000000?text=مرحباً، أود تجديد اشتراكي في استوديو الألعاب." target="_blank" class="btn btn-yes">نعم، تواصل للتجديد</a>
+            <a href="/logout" class="btn btn-no">لا، تسجيل الخروج</a>
+        </div>
+    </div>
+
+</body>
+</html>

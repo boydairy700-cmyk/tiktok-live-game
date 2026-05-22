@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>الأولاد ضد البنات 🔥</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet">
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="gifts-db.js"></script>
+    <script src="faces.js"></script>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        
+        body {
+            font-family: 'Cairo', sans-serif;
+            background: #05050a;
+            color: white;
+            overflow: hidden;
+            width: 100vw; height: 100vh;
+        }
+
+        /*  SETUP PANEL  */
+        #setup-panel {
+            position: fixed; inset: 0; z-index: 200;
+            background: radial-gradient(circle at center, #1a1a2e 0%, #05050a 100%);
+            display: flex; align-items: center; justify-content: center;
+        }
+        .setup-box {
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 24px;
+            padding: 40px;
+            width: 520px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        .setup-box h2 { text-align: center; font-size: 28px; margin-bottom: 30px; color: #ffd700; }
+
+        /* WINS COUNTER BAR */
+        #wins-bar {
+            position: absolute; top: 112px; left: 50%; transform: translateX(-50%);
+            z-index: 25; display: flex; align-items: center; gap: 18px;
+            background: rgba(0,0,0,0.7); border: 1px solid rgba(255,215,0,0.3);
+            border-radius: 30px; padding: 5px 20px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 0 20px rgba(255,215,0,0.1);
+        }
+        .wins-item { display:flex; align-items:center; gap:6px; font-size:14px; font-weight:700; }
+        .wins-num { font-size:22px; font-weight:900; }
+        .wins-label { font-size:11px; color:#aaa; }
+        #round-display { font-size:12px; color:#ffd700; font-weight:bold; }
+
+        /* PROJECTILE COMBAT ANIMATIONS */
+        .projectile {
+            position: fixed; font-size: 34px; z-index: 300;
+            pointer-events: none; filter: drop-shadow(0 0 8px rgba(255,255,255,0.8));
+        }
+        .proj-b2g { animation: projFlyRight 0.75s cubic-bezier(0.25,0.46,0.45,0.94) forwards; }
+        .proj-g2b { animation: projFlyLeft 0.75s cubic-bezier(0.25,0.46,0.45,0.94) forwards; }
+        @keyframes projFlyRight {
+            0%   { left:18%; top:42%; transform:scale(0.5) rotate(0deg); opacity:1; }
+            40%  { top:35%; transform:scale(1.1) rotate(180deg); opacity:1; }
+            85%  { left:74%; top:42%; transform:scale(0.9) rotate(360deg); opacity:1; }
+            100% { left:76%; top:42%; transform:scale(2) rotate(400deg); opacity:0; }
+        }
+        @keyframes projFlyLeft {
+            0%   { right:18%; top:42%; transform:scale(0.5) rotate(0deg); opacity:1; }
+            40%  { top:35%; transform:scale(1.1) rotate(-180deg); opacity:1; }
+            85%  { right:74%; top:42%; transform:scale(0.9) rotate(-360deg); opacity:1; }
+            100% { right:76%; top:42%; transform:scale(2) rotate(-400deg); opacity:0; }
+        }
+
+        /* IMPACT BURST */
+        .impact-burst {
+            position: fixed; z-index: 302; pointer-events: none;
+            animation: burstAnim 0.5s ease-out forwards;
+        }
+        @keyframes burstAnim {
+            0%  { transform: scale(0.2) rotate(0deg); opacity:1; }
+            50% { transform: scale(2.0) rotate(90deg); opacity:1; }
+            100%{ transform: scale(3.0) rotate(180deg); opacity:0; }
+        }
+
+        /* HP bars bigger */
+        .hp-bar-wrap { width: 200px; height: 16px; }
+
+        /* Better face size */
+        #boys-face-container svg, #girls-face-container svg { width: 220px !important; height: 220px !important; }
+
+        /* ROUND INFO on winner */
+        #round-info { font-size:14px; color:#ffd700; margin-bottom:8px; font-weight:bold; }
+
+        /* OVERALL SCORE on winner */
+        #overall-score {
+            display:flex; gap:30px; justify-content:center; margin:15px 0;
+            background:rgba(255,255,255,0.05); border-radius:15px; padding:12px 30px;
+        }
+        .os-item { text-align:center; }
+        .os-num { font-size:42px; font-weight:900; }
+        .os-label { font-size:13px; color:#aaa; }
+        .os-boys .os-num { color:#00f2fe; }
+        .os-girls .os-num { color:#e94560; }
+        .setup-section { margin-bottom: 25px; }
+        .setup-section label { display: block; font-size: 13px; color: #aaa; margin-bottom: 6px; }
+        .setup-section input[type=text], .setup-section input[type=number], .setup-section select {
+            width: 100%; padding: 11px 14px;
+            background: rgba(255,255,255,0.07);
+            border: 1px solid rgba(255,255,255,0.12);
+            border-radius: 10px; color: white; font-size: 15px;
+            font-family: 'Cairo', sans-serif;
+        }
+        .section-title {
+            font-size: 14px; font-weight: 700; color: #ffd700;
+            border-bottom: 1px solid rgba(255,215,0,0.2);
+            padding-bottom: 8px; margin-bottom: 15px;
+        }
+        .gifts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .gift-row {
+            background: rgba(255,255,255,0.04);
+            border-radius: 10px; padding: 12px;
+            display: flex; flex-direction: column; gap: 8px;
+        }
+        .gift-row .gift-header { display: flex; align-items: center; gap: 8px; }
+        .gift-tag { font-size: 20px; }
+        .gift-name-input { flex: 1; }
+        .gift-pts { display: flex; align-items: center; gap: 6px; }
+        .gift-pts label { font-size: 12px; color: #888; white-space: nowrap; }
+        .gift-pts input { width: 70px; }
+        .team-label-boys { color: #00f2fe; font-weight: 700; }
+        .team-label-girls { color: #e94560; font-weight: 700; }
+        .btn-primary {
+            width: 100%; padding: 14px;
+            background: linear-gradient(135deg, #e94560, #ff0080);
+            color: white; border: none; border-radius: 12px;
+            font-size: 18px; font-weight: 700; cursor: pointer;
+            box-shadow: 0 0 20px rgba(233,69,96,0.4);
+            transition: 0.3s; font-family: 'Cairo', sans-serif;
+        }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 0 30px rgba(233,69,96,0.6); }
+        .btn-secondary {
+            width: 100%; padding: 12px;
+            background: rgba(255,255,255,0.06);
+            border: 1px solid #00f2fe; color: #00f2fe;
+            border-radius: 12px; font-size: 16px; font-weight: 700;
+            cursor: pointer; margin-top: 10px;
+            font-family: 'Cairo', sans-serif;
+        }
+        /*  PREMIUM GIFT PICKER (TIKTOK STYLE)  */
+        .gift-picker-header { margin-bottom: 15px; }
+        .gift-picker-tabs { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 5px; }
+        .gpick-tab {
+            padding: 6px 16px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.1);
+            background: rgba(255,255,255,0.05); color: #888; cursor: pointer; font-size: 13px;
+            white-space: nowrap; transition: 0.2s;
+        }
+        .gpick-tab.active { background: #fff; color: #000; border-color: #fff; font-weight: bold; }
+        
+        .gift-grid {
+            display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;
+            max-height: 350px; overflow-y: auto; padding-right: 5px;
+        }
+        .gift-grid::-webkit-scrollbar { width: 5px; }
+        .gift-grid::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 3px; }
+        
+        .gift-card-v2 {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.05);
+            border-radius: 12px; padding: 10px 5px;
+            text-align: center; position: relative;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            user-select: none;
+        }
+        .gift-card-v2:hover { background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.2); transform: translateY(-2px); }
+        
+        .gc-team-indicators {
+            position: absolute; top: 5px; left: 5px; right: 5px;
+            display: flex; justify-content: space-between; opacity: 0;
+            transition: opacity 0.2s; z-index: 5;
+        }
+        .gift-card-v2:hover .gc-team-indicators { opacity: 1; }
+        
+        .gc-team-btn {
+            width: 24px; height: 24px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 12px; cursor: pointer; background: rgba(0,0,0,0.6);
+            border: 1px solid rgba(255,255,255,0.2); transition: 0.1s;
+        }
+        .gc-team-btn:hover { transform: scale(1.2); }
+        .gc-boy-btn:hover { background: #00f2fe; }
+        .gc-girl-btn:hover { background: #e94560; }
+        
+        .gc-image-area { height: 70px; display: flex; align-items: center; justify-content: center; margin-bottom: 5px; padding: 5px; }
+        .gc-real-img { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.5)) brightness(1.1); transition: transform 0.3s; }
+        .gift-card-v2:hover .gc-real-img { transform: scale(1.15) rotate(5deg); }
+        .gc-emoji { font-size: 36px; filter: drop-shadow(0 4px 10px rgba(255,255,255,0.1)); }
+        
+        .gc-info .gc-name { font-size: 11px; color: #ccc; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .gc-info .gc-price { font-size: 12px; color: #ffd700; font-weight: bold; }
+        
+        /* Selection states */
+        .gift-card-v2.active-boys { border-color: #00f2fe; background: rgba(0, 242, 254, 0.05); box-shadow: 0 0 15px rgba(0, 242, 254, 0.2); }
+        .gift-card-v2.active-girls { border-color: #e94560; background: rgba(233, 69, 96, 0.05); box-shadow: 0 0 15px rgba(233, 69, 96, 0.2); }
+        
+        .gc-sel-marker {
+            position: absolute; top: -5px; right: -5px;
+            width: 20px; height: 20px; border-radius: 50%;
+            display: none; align-items: center; justify-content: center;
+            font-size: 10px; font-weight: bold; border: 2px solid #1a1a2e; z-index: 6;
+        }
+        .marker-boys { background: #00f2fe; color: #000; }
+        .marker-girls { background: #e94560; color: #fff; }
+        
+        .gift-picker-footer {
+            margin-top: 15px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+        }
+        .team-sel-preview {
+            background: rgba(255,255,255,0.03); border-radius: 10px; padding: 10px;
+            display: flex; flex-direction: column; gap: 4px; border: 1px solid rgba(255,255,255,0.05);
+        }
+        .boys-preview { border-right: 3px solid #00f2fe; }
+        .girls-preview { border-right: 3px solid #e94560; }
+        .p-label { font-size: 12px; color: #666; font-weight: bold; }
+        .p-list { font-size: 14px; color: #eee; height: 20px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+        
+        .setup-box { width: 620px; border-radius: 30px; }
+
+        /*  BATTLE SCREEN  */
+        #battle-screen {
+            width: 100%; height: 100%;
+            position: relative;
+        }
+
+        .battle-bg {
+            position: absolute; inset: 0;
+            display: grid; grid-template-columns: 1fr 1fr;
+        }
+        .bg-boys {
+            background: linear-gradient(135deg, #0a1628 0%, #0f3460 50%, #1a1a2e 100%);
+        }
+        .bg-girls {
+            background: linear-gradient(225deg, #1a0010 0%, #5c0030 50%, #1a1a2e 100%);
+        }
+
+        /* BG particles */
+        @keyframes pulseBG { 0%,100%{opacity:0.5} 50%{opacity:1} }
+
+        /*  ROCKET ANIMATION  */
+        .rocket {
+            position: fixed;
+            font-size: 40px;
+            z-index: 300;
+            pointer-events: none;
+            transform-origin: center;
+        }
+        .rocket.boys-to-girls {
+            animation: rocketFlyRight 0.9s cubic-bezier(0.3,0,0.7,1) forwards;
+        }
+        .rocket.girls-to-boys {
+            animation: rocketFlyLeft 0.9s cubic-bezier(0.3,0,0.7,1) forwards;
+        }
+        @keyframes rocketFlyRight {
+            0%   { left:22%; top:45%; transform:scale(0.4) rotate(-45deg); opacity:1; }
+            50%  { top:38%; transform:scale(1) rotate(-45deg); opacity:1; }
+            85%  { left:72%; top:45%; transform:scale(0.9) rotate(-45deg); opacity:1; }
+            100% { left:74%; top:45%; transform:scale(2) rotate(-45deg); opacity:0; }
+        }
+        @keyframes rocketFlyLeft {
+            0%   { right:22%; top:45%; transform:scale(0.4) rotate(135deg); opacity:1; }
+            50%  { top:38%; transform:scale(1) rotate(135deg); opacity:1; }
+            85%  { right:72%; top:45%; transform:scale(0.9) rotate(135deg); opacity:1; }
+            100% { right:74%; top:45%; transform:scale(2) rotate(135deg); opacity:0; }
+        }
+        .explosion {
+            position: fixed; font-size: 60px; z-index: 301;
+            pointer-events: none;
+            animation: explode 0.6s ease-out forwards;
+        }
+        /*  START INSTRUCTIONS  */
+        #start-instruct {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.85); border: 2px solid #ffd700; border-radius: 20px;
+            padding: 30px; z-index: 1000; text-align: center;
+            display: none; animation: fadeInOut 4s forwards;
+            box-shadow: 0 0 30px rgba(255,215,0,0.3);
+            min-width: 300px;
+        }
+        .instruct-row { display: flex; align-items: center; justify-content: center; gap: 15px; margin: 15px 0; font-size: 20px; }
+        .instruct-btn { padding: 5px 15px; border-radius: 10px; font-weight: bold; }
+        .inst-boys { background: #00f2fe; color: #000; }
+        .inst-girls { background: #e94560; color: #fff; }
+
+        @keyframes fadeInOut {
+            0% { opacity: 0; transform: translate(-50%, -40%); }
+            10% { opacity: 1; transform: translate(-50%, -50%); }
+            90% { opacity: 1; transform: translate(-50%, -50%); }
+            100% { opacity: 0; transform: translate(-50%, -60%); pointer-events: none; }
+        }
+        @keyframes explode {
+            0%  { transform:scale(0.2); opacity:1; }
+            50% { transform:scale(1.8); opacity:1; }
+            100%{ transform:scale(2.5); opacity:0; }
+        }
+
+        /*  SPECIAL COMBAT ANIMATIONS  */
+        .laser-beam {
+            position: fixed; height: 10px; background: linear-gradient(90deg, transparent, #00ff00, #fff, #00ff00, transparent);
+            z-index: 300; pointer-events: none; box-shadow: 0 0 20px #00ff00;
+        }
+        .laser-beam.l-to-r { left: 20%; top: 45%; width: 0; animation: laserShootR 0.6s linear forwards; }
+        .laser-beam.r-to-l { right: 20%; top: 45%; width: 0; animation: laserShootL 0.6s linear forwards; }
+        @keyframes laserShootR { 0% { width: 0; } 50% { width: 60%; } 100% { width: 0; left: 80%; } }
+        @keyframes laserShootL { 0% { width: 0; } 50% { width: 60%; } 100% { width: 0; right: 80%; } }
+
+        .saw-anim {
+            position: fixed; font-size: 50px; z-index: 300; pointer-events: none;
+        }
+        .saw-anim.s-to-r { left: 20%; top: 45%; animation: sawMoveR 0.8s linear forwards; }
+        .saw-anim.s-to-l { right: 20%; top: 45%; animation: sawMoveL 0.8s linear forwards; }
+        @keyframes sawMoveR { 0% { left: 20%; transform: rotate(0); } 100% { left: 75%; transform: rotate(1440deg); } }
+        @keyframes sawMoveL { 0% { right: 20%; transform: rotate(0); } 100% { right: 75%; transform: rotate(-1440deg); } }
+
+        .tornado-anim {
+            position: fixed; font-size: 80px; z-index: 300; pointer-events: none;
+        }
+        .tornado-anim.t-to-r { left: 20%; top: 40%; animation: tornadoMoveR 1s ease-in forwards; }
+        .tornado-anim.t-to-l { right: 20%; top: 40%; animation: tornadoMoveL 1s ease-in forwards; }
+        @keyframes tornadoMoveR { 0% { left: 20%; opacity: 0.5; } 50% { transform: scale(1.5) rotate(720deg); opacity: 1; } 100% { left: 75%; opacity: 0; } }
+        @keyframes tornadoMoveL { 0% { right: 20%; opacity: 0.5; } 50% { transform: scale(1.5) rotate(-720deg); opacity: 1; } 100% { right: 75%; opacity: 0; } }
+        .admin-ctrl-panel {
+            position: fixed; top: 20px; right: 20px;
+            background: rgba(0,0,0,0.8); border: 1px solid #444; border-radius: 15px;
+            padding: 15px; z-index: 1001; width: 220px;
+            display: flex; flex-direction: column; gap: 10px;
+            opacity: 0.1; transition: opacity 0.3s;
+        }
+        .admin-ctrl-panel:hover { opacity: 1; }
+        .admin-ctrl-title { font-size: 12px; color: #ffd700; text-align: center; margin-bottom: 5px; font-weight: bold; }
+        .admin-row { display: flex; gap: 5px; justify-content: space-between; align-items: center; }
+        .admin-btn { 
+            padding: 4px 8px; font-size: 10px; border-radius: 5px; border: none; 
+            cursor: pointer; font-weight: bold; background: #333; color: white;
+        }
+        .admin-btn.btn-boys { background: #00f2fe; color: black; }
+        .admin-btn.btn-girls { background: #e94560; color: white; }
+        .admin-btn:hover { filter: brightness(1.2); }
+        .admin-label { font-size: 10px; color: #888; flex: 1; }
+
+        /* HP bars */
+        .hp-bar-wrap {
+            width: 180px; height: 14px;
+            background: rgba(0,0,0,0.4);
+            border-radius: 7px; overflow: hidden;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        .hp-bar {
+            height: 100%; border-radius: 7px;
+            transition: width 0.6s ease;
+        }
+        .hp-bar.boys { background: linear-gradient(90deg, #00f2fe, #4facfe); }
+        .hp-bar.girls { background: linear-gradient(90deg, #e94560, #ff0080); }
+
+        /* Combo display */
+        .combo-display {
+            position: fixed; z-index: 200; font-size: 36px; font-weight: 900;
+            pointer-events: none;
+            animation: comboPop 1.5s ease-out forwards;
+        }
+        @keyframes comboPop {
+            0%  { transform:scale(0) rotate(-10deg); opacity:1; }
+            20% { transform:scale(1.4) rotate(5deg); opacity:1; }
+            80% { transform:scale(1) rotate(0deg); opacity:1; }
+            100%{ transform:scale(0.5) translateY(-40px); opacity:0; }
+        }
+
+        /* Score Bar */
+        #score-bar-wrap {
+            position: absolute; top: 20px; left: 50%; transform: translateX(-50%);
+            width: 70%; z-index: 20;
+            display: flex; align-items: center; gap: 10px;
+        }
+        .team-score-label { font-size: 22px; font-weight: 900; }
+        .boys-score-label { color: #00f2fe; }
+        .girls-score-label { color: #e94560; }
+        #score-bar {
+            flex: 1; height: 28px; border-radius: 14px; overflow: hidden;
+            background: rgba(255,255,255,0.08);
+            border: 2px solid rgba(255,255,255,0.15);
+            display: flex;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+        }
+        #boys-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #00f2fe, #4facfe);
+            width: 50%;
+            transition: width 0.8s cubic-bezier(0.175,0.885,0.32,1.275);
+            box-shadow: 0 0 15px rgba(0,242,254,0.5);
+        }
+        #girls-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #e94560, #ff0080);
+            width: 50%;
+            transition: width 0.8s cubic-bezier(0.175,0.885,0.32,1.275);
+            box-shadow: 0 0 15px rgba(233,69,96,0.5);
+        }
+
+        /* Timer */
+        #timer {
+            position: absolute; top: 60px; left: 50%; transform: translateX(-50%);
+            z-index: 20; font-size: 32px; font-weight: 900;
+            background: rgba(0,0,0,0.8);
+            border: 2px solid rgba(255,255,255,0.2);
+            padding: 8px 35px; border-radius: 30px;
+            backdrop-filter: blur(15px);
+            transition: all 0.3s;
+            cursor: pointer;
+            user-select: none;
+        }
+        #timer.urgent { color: #ff4b2b; animation: timerPulse 0.4s infinite; border-color: #ff4b2b; box-shadow: 0 0 20px rgba(255,75,43,0.5); }
+        @keyframes timerPulse { 0%,100%{transform:translateX(-50%) scale(1)} 50%{transform:translateX(-50%) scale(1.1)} }
+        #timer-edit-panel {
+            position: absolute; top: 115px; left: 50%; transform: translateX(-50%);
+            z-index: 21; background: rgba(10,10,25,0.95);
+            border: 1px solid #00f2fe; border-radius: 12px;
+            padding: 15px 20px; display: none; gap: 10px; align-items: center;
+            backdrop-filter: blur(10px);
+        }
+        #timer-edit-panel.show { display: flex; }
+        #timer-edit-input { width: 80px; padding: 8px; background: rgba(255,255,255,0.1); border: 1px solid #00f2fe; border-radius: 8px; color: white; font-size: 18px; text-align: center; }
+        #timer-edit-confirm { padding: 8px 18px; background: #00f2fe; color: #000; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
+
+        /* VS Logo */
+        #vs-logo {
+            position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 30; font-size: 72px; font-weight: 900;
+            text-shadow: 0 0 30px rgba(255,255,255,0.5);
+            pointer-events: none;
+            transition: transform 0.1s;
+        }
+        #vs-logo.hit { animation: vsHit 0.3s ease-out; }
+        @keyframes vsHit {
+            0%{transform:translate(-50%,-50%) scale(1)}
+            50%{transform:translate(-50%,-50%) scale(1.4);filter:brightness(3)}
+            100%{transform:translate(-50%,-50%) scale(1)}
+        }
+
+        /* Character areas */
+        /* Force LTR on battle screen so positions are consistent */
+        #battle-screen { direction: ltr; }
+
+        .team-area {
+            position: absolute; top: 0; width: 50%; height: 100%;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            gap: 10px;
+        }
+        #boys-area { left: 0; }   /* Boys always on VISUAL LEFT */
+        #girls-area { right: 0; } /* Girls always on VISUAL RIGHT */
+
+        .face-wrapper {
+            position: relative;
+            transition: transform 0.4s cubic-bezier(0.175,0.885,0.32,1.275);
+        }
+        .face-wrapper.celebrate { animation: celebrateBounce 0.6s ease; }
+        .face-wrapper.hit { animation: hitShake 0.4s ease; }
+        @keyframes celebrateBounce {
+            0%{transform:scale(1)}
+            30%{transform:scale(1.25) rotate(-5deg)}
+            60%{transform:scale(1.15) rotate(5deg)}
+            100%{transform:scale(1)}
+        }
+        @keyframes hitShake {
+            0%,100%{transform:translateX(0)}
+            20%{transform:translateX(-15px)}
+            40%{transform:translateX(15px)}
+            60%{transform:translateX(-10px)}
+            80%{transform:translateX(10px)}
+        }
+
+        .team-name {
+            font-size: 32px; font-weight: 900; letter-spacing: 1px;
+        }
+        .boys-team { color: #00f2fe; text-shadow: 0 0 15px rgba(0,242,254,0.5); }
+        .girls-team { color: #e94560; text-shadow: 0 0 15px rgba(233,69,96,0.5); }
+
+        .team-score-big {
+            font-size: 48px; font-weight: 900; opacity: 0.9;
+        }
+
+        .support-hint {
+            font-size: 14px; color: rgba(255,255,255,0.6);
+            background: rgba(255,255,255,0.05);
+            padding: 8px 18px; border-radius: 20px;
+            border: 1px solid rgba(255,255,255,0.1);
+            max-width: 220px; text-align: center;
+        }
+
+        /* Event Feed */
+        #event-feed {
+            position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
+            width: 420px; max-height: 140px; overflow: hidden;
+            background: rgba(0,0,0,0.55); backdrop-filter: blur(12px);
+            border-radius: 16px; border: 1px solid rgba(255,255,255,0.08);
+            padding: 10px;
+        }
+        .event-item {
+            display: flex; align-items: center; gap: 10px;
+            padding: 5px 8px; font-size: 14px;
+            animation: slideUp 0.3s ease-out;
+            border-bottom: 1px solid rgba(255,255,255,0.04);
+        }
+        @keyframes slideUp { from{transform:translateY(20px);opacity:0} to{transform:translateY(0);opacity:1} }
+        .event-avatar { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; }
+
+        /* Floating points */
+        .float-pts {
+            position: fixed; font-weight: 900; font-size: 32px;
+            pointer-events: none; z-index: 100;
+            animation: floatPts 1.2s ease-out forwards;
+        }
+        @keyframes floatPts {
+            0%{transform:translateY(0) scale(0.5);opacity:1}
+            50%{transform:translateY(-60px) scale(1.2);opacity:1}
+            100%{transform:translateY(-120px) scale(0.8);opacity:0}
+        }
+
+        /* Flying shapes */
+        .fly-shape {
+            position: fixed; font-size: 28px; pointer-events: none; z-index: 99;
+            animation: flyShape 1.5s ease-out forwards;
+        }
+        @keyframes flyShape {
+            0%{transform:scale(0) rotate(0deg);opacity:1}
+            100%{transform:scale(1.5) rotate(var(--rot)) translate(var(--tx),var(--ty));opacity:0}
+        }
+
+        /* Super power overlay */
+        #super-overlay {
+            position: fixed; inset: 0; z-index: 150;
+            pointer-events: none; display: none;
+            align-items: center; justify-content: center;
+            flex-direction: column;
+        }
+        .super-bg { position: absolute; inset: 0; animation: flashBG 0.15s infinite; }
+        @keyframes flashBG { 0%,100%{background:rgba(255,255,255,0)} 50%{background:rgba(255,255,255,0.15)} }
+        .super-text {
+            font-size: 90px; font-weight: 900; position: relative; z-index: 1;
+            animation: superPop 0.5s cubic-bezier(0.175,0.885,0.32,1.275);
+        }
+        @keyframes superPop {
+            0%{transform:scale(0);opacity:0}
+            70%{transform:scale(1.3)}
+            100%{transform:scale(1);opacity:1}
+        }
+        .super-icon { font-size: 130px; position: relative; z-index: 1; animation: superFloat 0.8s ease-in-out infinite alternate; }
+        @keyframes superFloat { from{transform:translateY(0)} to{transform:translateY(-20px)} }
+
+        /* Winner screen */
+        #winner-screen {
+            position: fixed; inset: 0; z-index: 180;
+            background: rgba(0,0,0,0.92);
+            display: none; flex-direction: column;
+            align-items: center; justify-content: center; text-align: center;
+        }
+        .winner-crown { font-size: 70px; animation: crownFloat 1.5s ease-in-out infinite; margin-bottom: -10px; }
+        @keyframes crownFloat { 0%,100%{transform:translateY(0) rotate(-5deg)} 50%{transform:translateY(-12px) rotate(5deg)} }
+        .winner-title { font-size: 60px; font-weight: 900; margin: 10px 0; }
+        .winner-final { font-size: 22px; color: #ccc; margin-bottom: 20px; }
+        .btn-restart {
+            padding: 15px 50px; background: #e94560; color: white;
+            border: none; border-radius: 12px; font-size: 20px; font-weight: 700;
+            cursor: pointer; font-family: 'Cairo', sans-serif;
+        }
+        /* Characters on winner screen */
+        .end-scene { display: flex; align-items: flex-end; justify-content: center; gap: 60px; margin: 15px 0 25px; }
+        .end-char { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+        .end-char-name { font-size: 14px; font-weight: 700; color: #aaa; }
+        .end-char-img { width: 120px; height: 120px; object-fit: contain; }
+        .winner-char .end-char-img { animation: winnerBounce 0.6s ease infinite alternate; }
+        @keyframes winnerBounce { from{transform:translateY(0) scale(1)} to{transform:translateY(-18px) scale(1.06)} }
+        .loser-char .end-char-img { animation: loserShake 0.15s ease infinite alternate; opacity: 0.7; filter: grayscale(0.5); }
+        @keyframes loserShake { from{transform:rotate(-4deg) translateY(2px)} to{transform:rotate(4deg) translateY(0)} }
+        .winner-char-crown { font-size: 36px; animation: crownBounce 0.6s ease infinite alternate; }
+        @keyframes crownBounce { from{transform:translateY(0)} to{transform:translateY(-10px)} }
+        .loser-x { font-size: 28px; color: #e74c3c; }
+
+        /* Confetti canvas */
+        #confetti-canvas {
+            position: fixed; inset: 0; pointer-events: none; z-index: 90;
+        }
+
+        /* Debug panel */
+        #debug-panel {
+            position: fixed; bottom: 20px; right: 20px; z-index: 50;
+            background: rgba(10,10,20,0.9); border: 1px solid #e94560;
+            border-radius: 14px; padding: 16px;
+            display: flex; flex-direction: column; gap: 10px; width: 190px;
+            backdrop-filter: blur(10px);
+        }
+        #debug-panel h4 { font-size: 14px; color: #ffd700; }
+        .dbg-btn {
+            padding: 9px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);
+            background: rgba(255,255,255,0.05); color: white; cursor: pointer;
+            font-size: 13px; font-family: 'Cairo', sans-serif;
+            transition: 0.2s;
+        }
+        .dbg-btn:hover { background: rgba(255,255,255,0.12); }
+        .dbg-btn.active { background: #e94560; border-color: #e94560; }
+
+        /* Like/hearts animation for background */
+        .bg-heart {
+            position: fixed; font-size: 24px; pointer-events: none; z-index: 5;
+            animation: bgFloat 3s ease-out forwards;
+        }
+        @keyframes bgFloat {
+            0%{transform:translateY(0) scale(1);opacity:0.8}
+            100%{transform:translateY(-100vh) scale(0.3);opacity:0}
+        }
+        
+        /*  MOBILE RESPONSIVENESS  */
+        @media (max-width: 768px) {
+            .setup-box { width: 95%; padding: 20px; }
+            .setup-box h2 { font-size: 20px; margin-bottom: 15px; }
+            .setup-section input[type=text], .setup-section input[type=number], .setup-section select { padding: 8px; font-size: 14px; }
+            
+            #score-bar-wrap { width: 95%; top: 10px; }
+            .team-score-label { font-size: 16px; }
+            #score-bar { height: 18px; }
+            
+            #timer { font-size: 20px; padding: 5px 20px; top: 40px; }
+            
+            .team-name { font-size: 18px; }
+            .team-score-big { font-size: 28px; }
+            .support-hint { font-size: 10px; padding: 5px 10px; max-width: 140px; }
+            
+            #vs-logo { font-size: 32px; }
+            
+            .face-wrapper { transform: scale(0.6); }
+            
+            #event-feed { width: 90%; bottom: 10px; font-size: 12px; }
+            
+            .admin-ctrl-panel { transform: scale(0.7); transform-origin: top right; right: 5px; top: 5px; }
+            #debug-panel { transform: scale(0.7); transform-origin: bottom right; right: 5px; bottom: 5px; }
+            
+            .winner-title { font-size: 40px; }
+            .winner-crown { font-size: 50px; }
+        }
+    </style>
+<link rel="stylesheet" href="/cursor.css">
+<script src="/cursor.js"></script>
+</head>
+<body>
+
+<!--  SETUP PANEL  -->
+<div id="setup-panel">
+    <div class="setup-box">
+        <h2>  </h2>
+
+        <div class="setup-section">
+            <div class="section-title">⚙️ إعدادات الجلسة</div>
+            <label>  (@username)</label>
+            <input type="text" id="username-input" placeholder=": aaa_streamer">
+        </div>
+
+        <div class="setup-section">
+            <div class="section-title">    </div>
+            <p style="font-size:12px;color:#888;margin-bottom:10px">          .</p>
+            <div id="gift-picker-container"></div>
+        </div>
+
+        <div class="setup-section">
+            <div class="section-title">  </div>
+            <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px;">
+                <div>
+                    <label>  ()</label>
+                    <input type="number" id="duration-input" value="5" min="1" max="60">
+                </div>
+                <div>
+                    <label> </label>
+                    <input type="number" id="like-pts-input" value="10" min="0">
+                </div>
+                <div>
+                    <label> </label>
+                    <input type="number" id="share-pts-input" value="10" min="0">
+                </div>
+                <div>
+                    <label> </label>
+                    <input type="number" id="follow-pts-input" value="10" min="0">
+                </div>
+                <div>
+                    <label> </label>
+                    <select id="follow-team-select">

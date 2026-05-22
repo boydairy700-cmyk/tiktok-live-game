@@ -1,0 +1,871 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Boydairy STUDIO</title>
+    <!--  "Changa"    -->
+    <link href="https://fonts.googleapis.com/css2?family=Changa:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Changa', sans-serif; }
+        
+        :root {
+            --neon-pink: #ff0055;
+            --neon-cyan: #00f0ff;
+            --neon-green: #00ff88;
+            --neon-purple: #b026ff;
+            --bg-color: #05010a;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: white;
+            min-height: 100vh;
+            overflow-x: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /*  CYBERPUNK 3D GRID BACKGROUND  */
+        .cyber-grid-container {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            z-index: -2;
+            perspective: 1000px;
+            overflow: hidden;
+            background: radial-gradient(circle at center, #1a0b2e 0%, var(--bg-color) 70%);
+        }
+        .cyber-grid {
+            position: absolute;
+            bottom: -30%; left: -50%; width: 200%; height: 150%;
+            background-image: 
+                linear-gradient(rgba(0, 240, 255, 0.3) 2px, transparent 2px),
+                linear-gradient(90deg, rgba(0, 240, 255, 0.3) 2px, transparent 2px);
+            background-size: 60px 60px;
+            transform: rotateX(75deg);
+            animation: gridMove 2s linear infinite;
+        }
+        @keyframes gridMove {
+            from { background-position: 0 0; }
+            to { background-position: 0 60px; }
+        }
+        
+        /* Sun / Horizon Glow */
+        .horizon-glow {
+            position: fixed;
+            top: 30%; left: 50%; transform: translate(-50%, -50%);
+            width: 600px; height: 600px;
+            background: radial-gradient(circle, rgba(255,0,85,0.2) 0%, rgba(176,38,255,0.1) 40%, transparent 70%);
+            z-index: -1;
+            animation: pulseSun 4s infinite alternate;
+        }
+        @keyframes pulseSun {
+            0% { transform: translate(-50%, -50%) scale(1); opacity: 0.8; }
+            100% { transform: translate(-50%, -50%) scale(1.2); opacity: 1; }
+        }
+
+        /*  NAVBAR  */
+        .nav-bar {
+            width: 100%; padding: 15px 40px;
+            display: flex; justify-content: space-between; align-items: center;
+            background: rgba(5, 1, 10, 0.9);
+            border-bottom: 2px solid var(--neon-cyan);
+            box-shadow: 0 0 20px rgba(0, 240, 255, 0.3);
+            position: sticky; top: 0; z-index: 100;
+        }
+        .nav-brand {
+            font-size: 28px; font-weight: 800;
+            color: #fff; text-transform: uppercase;
+            text-shadow: 0 0 10px var(--neon-cyan), 0 0 20px var(--neon-cyan);
+            letter-spacing: 2px;
+        }
+        .nav-links a {
+            color: #fff; text-decoration: none; font-weight: 600; font-size: 18px;
+            padding: 8px 20px; border-radius: 4px;
+            border: 1px solid var(--neon-pink);
+            box-shadow: inset 0 0 10px rgba(255,0,85,0.2);
+            transition: 0.3s;
+        }
+        .nav-links a:hover {
+            background: var(--neon-pink);
+            box-shadow: 0 0 20px var(--neon-pink);
+        }
+
+        /*  HEADER GLITCH TEXT  */
+        .header {
+            text-align: center; margin: 60px 20px 50px;
+            position: relative; z-index: 10;
+        }
+        .glitch-text {
+            font-size: 60px; font-weight: 800; color: white;
+            position: relative; display: inline-block;
+            text-shadow: 0.05em 0 0 var(--neon-cyan), -0.03em -0.04em 0 var(--neon-pink);
+            animation: glitchEffect 3s infinite alternate;
+        }
+        @keyframes glitchEffect {
+            0% { text-shadow: 0.05em 0 0 var(--neon-cyan), -0.05em -0.02em 0 var(--neon-pink); }
+            14% { text-shadow: 0.05em 0 0 var(--neon-cyan), -0.05em -0.02em 0 var(--neon-pink); }
+            15% { text-shadow: -0.05em -0.025em 0 var(--neon-cyan), 0.025em 0.025em 0 var(--neon-pink); }
+            49% { text-shadow: -0.05em -0.025em 0 var(--neon-cyan), 0.025em 0.025em 0 var(--neon-pink); }
+            50% { text-shadow: 0.025em 0.05em 0 var(--neon-cyan), 0.05em 0 0 var(--neon-pink); }
+            99% { text-shadow: 0.025em 0.05em 0 var(--neon-cyan), 0.05em 0 0 var(--neon-pink); }
+            100% { text-shadow: -0.025em 0 0 var(--neon-cyan), -0.025em -0.025em 0 var(--neon-pink); }
+        }
+        .header p {
+            font-size: 24px; color: #00f0ff; font-weight: 600;
+            text-shadow: 0 0 10px rgba(0, 240, 255, 0.5);
+            margin-top: 10px;
+        }
+
+        /* VIP BANNER */
+        .vip-banner {
+            display: none; margin: 30px auto 0; padding: 10px 40px;
+            background: rgba(255, 215, 0, 0.1);
+            border: 2px solid var(--gold);
+            font-size: 24px; font-weight: 800; color: var(--gold);
+            text-shadow: 0 0 10px var(--gold);
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.4), inset 0 0 20px rgba(255, 215, 0, 0.2);
+            clip-path: polygon(10px 0, 100% 0, calc(100% - 10px) 100%, 0 100%);
+            animation: vipPulse 1.5s infinite alternate;
+        }
+        @keyframes vipPulse {
+            to { box-shadow: 0 0 40px rgba(255, 215, 0, 0.8), inset 0 0 40px rgba(255, 215, 0, 0.4); }
+        }
+
+        /*  ESPORTS CARDS GRID  */
+        .game-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 40px; width: 100%; max-width: 1400px;
+            padding: 0 40px 100px;
+            position: relative; z-index: 10;
+        }
+
+        /* 3D Tilt Card Base */
+        .cyber-card {
+            background: rgba(10, 5, 20, 0.8);
+            border: 2px solid var(--neon-purple);
+            box-shadow: 0 0 20px rgba(176, 38, 255, 0.3);
+            border-radius: 15px;
+            padding: 20px;
+            position: relative;
+            transform-style: preserve-3d; /* For 3D inner elements */
+            cursor: pointer;
+            transition: border-color 0.3s;
+        }
+        .cyber-card::before {
+            content: ''; position: absolute; top: -2px; left: -2px; right: -2px; bottom: -2px;
+            background: linear-gradient(45deg, var(--neon-pink), var(--neon-cyan), var(--neon-purple));
+            z-index: -1; filter: blur(15px); opacity: 0; transition: opacity 0.4s;
+            border-radius: 15px;
+        }
+        .cyber-card:hover::before { opacity: 1; }
+        .cyber-card:hover { border-color: var(--neon-cyan); }
+
+        .img-box {
+            width: 100%; height: 220px;
+            border-radius: 10px; overflow: hidden;
+            border: 2px solid rgba(255,255,255,0.1);
+            transform: translateZ(40px); /* Pops out during tilt! */
+            position: relative;
+        }
+        .img-box img {
+            width: 100%; height: 100%; object-fit: cover;
+            filter: contrast(1.2) saturate(1.3);
+            transition: transform 0.5s;
+        }
+        .cyber-card:hover .img-box img { transform: scale(1.15); }
+
+        /* Game Title & Desc */
+        .card-content {
+            margin-top: 20px;
+            transform: translateZ(30px); /* 3D effect */
+            text-align: center;
+        }
+        .card-content h2 {
+            font-size: 32px; font-weight: 800; color: #fff;
+            text-transform: uppercase; margin-bottom: 10px;
+            text-shadow: 0 0 10px rgba(255,255,255,0.5);
+        }
+        .card-content p {
+            color: #ccc; font-size: 18px; font-weight: 600;
+            margin-bottom: 25px; line-height: 1.5;
+        }
+
+        /* Cyberpunk Button */
+        .cyber-btn {
+            background: transparent;
+            color: var(--neon-cyan);
+            border: 2px solid var(--neon-cyan);
+            padding: 12px 30px;
+            font-size: 22px; font-family: 'Changa', sans-serif; font-weight: 800;
+            text-transform: uppercase;
+            position: relative; overflow: hidden; cursor: pointer;
+            box-shadow: inset 0 0 10px rgba(0, 240, 255, 0.2);
+            transition: 0.3s;
+            width: 100%;
+            display: flex; align-items: center; justify-content: center; gap: 10px;
+            clip-path: polygon(15px 0, 100% 0, 100% calc(100% - 15px), calc(100% - 15px) 100%, 0 100%, 0 15px);
+            transform: translateZ(50px); /* Maximum 3D pop */
+        }
+        .cyber-btn:hover {
+            background: var(--neon-cyan);
+            color: #000;
+            box-shadow: 0 0 30px var(--neon-cyan);
+            text-shadow: none;
+        }
+        .cyber-btn svg { width: 24px; height: 24px; fill: currentColor; }
+
+        /* Custom Colors Per Card */
+        .card-battle { border-color: var(--neon-pink); }
+        .card-battle .cyber-btn { border-color: var(--neon-pink); color: var(--neon-pink); }
+        .card-battle .cyber-btn:hover { background: var(--neon-pink); color: #fff; box-shadow: 0 0 30px var(--neon-pink); }
+
+        .card-race { border-color: var(--neon-green); }
+        .card-race .cyber-btn { border-color: var(--neon-green); color: var(--neon-green); }
+        .card-race .cyber-btn:hover { background: var(--neon-green); color: #000; box-shadow: 0 0 30px var(--neon-green); }
+
+        .card-castle { border-color: #ff8c00; }
+        .card-castle .cyber-btn { border-color: #ff8c00; color: #ff8c00; }
+        .card-castle .cyber-btn:hover { background: #ff8c00; color: #000; box-shadow: 0 0 30px #ff8c00; }
+
+        
+        /* ANIMATIONS */
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(40px) translateZ(0); }
+            to { opacity: 1; transform: translateY(0) translateZ(0); }
+        }
+        .cyber-card {
+            animation: fadeInUp 0.6s ease-out backwards;
+        }
+        .cyber-card:nth-child(1) { animation-delay: 0.1s; }
+        .cyber-card:nth-child(2) { animation-delay: 0.2s; }
+        .cyber-card:nth-child(3) { animation-delay: 0.3s; }
+        .cyber-card:nth-child(4) { animation-delay: 0.4s; }
+        .cyber-card:nth-child(5) { animation-delay: 0.5s; }
+        .cyber-card:nth-child(6) { animation-delay: 0.6s; }
+        .cyber-card:nth-child(7) { animation-delay: 0.7s; }
+        .cyber-card:nth-child(8) { animation-delay: 0.8s; }
+        .cyber-card:nth-child(9) { animation-delay: 0.9s; }
+        .cyber-card:nth-child(10) { animation-delay: 1.0s; }
+        .cyber-card:nth-child(11) { animation-delay: 1.1s; }
+        .cyber-card:nth-child(12) { animation-delay: 1.2s; }
+
+        /* MUTE BUTTON */
+        .mute-btn {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 60px;
+            height: 60px;
+            background: rgba(0,0,0,0.7);
+            border: 2px solid var(--neon-cyan);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            cursor: pointer;
+            z-index: 9999;
+            box-shadow: 0 0 15px rgba(0, 240, 255, 0.4);
+            transition: 0.3s;
+        }
+        .mute-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 25px var(--neon-cyan);
+        }
+
+        /*  MOBILE RESPONSIVENESS  */
+        @media (max-width: 768px) {
+            .nav-bar { flex-direction: column; gap: 15px; padding: 15px; }
+            .header { margin-top: 30px; }
+            .glitch-text { font-size: 35px; }
+            .game-grid { grid-template-columns: 1fr; padding: 0 20px 50px; gap: 20px; }\n            .mute-btn { bottom: 20px; right: 20px; width: 50px; height: 50px; font-size: 22px; }
+            .cyber-card { padding: 15px; }
+            .img-box { height: 180px; }
+        }
+    </style>
+<link rel="stylesheet" href="/cursor.css">
+<script src="/cursor.js"></script>
+</head>
+<body>
+
+    <!-- MUTE BUTTON -->
+    <button id="mute-btn" class="mute-btn" onclick="toggleMute()">🔊</button>
+
+    <!-- RELAXING BACKGROUND AUDIO -->
+    <audio id="bg-audio" loop>
+        <source src="https://cdn.pixabay.com/download/audio/2022/05/27/audio_1808fbf07a.mp3?filename=relaxing-mountains-rivers-streams-running-water-18178.mp3" type="audio/mpeg">
+    </audio>
+
+    <!-- BACKGROUND EFFECTS -->
+    <div class="cyber-grid-container">
+        <div class="cyber-grid"></div>
+    </div>
+    <div class="horizon-glow"></div>
+
+    <!-- NAVBAR -->
+    <nav class="nav-bar">
+        <div class="nav-brand">Boydairy STUDIO</div>
+        <div class="nav-links">
+            <a href="/admin" id="admin-link" style="display: none;">لوحة التحكم</a>
+            <a href="/logout" class="logout-btn">تسجيل الخروج</a>
+        </div>
+    </nav>
+
+    <!-- HEADER -->
+    <div class="header" id="main-header">
+        <h1 class="glitch-text" data-text="أهلاً بك في منصة الألعاب">أهلاً بك في منصة الألعاب</h1>
+        <p>اختر اللعبة وابدأ البث المباشر فوراً</p>
+        
+        <div id="vip-balance" class="vip-banner">
+            عضوية VIP <span id="vip-username"></span> | الأيام المتبقية: <span id="vip-days"></span> 
+        </div>
+
+        <!-- 1-CLICK CONNECTION UI -->
+        <div id="connection-panel" style="margin-top: 30px; background: rgba(0,0,0,0.6); padding: 20px; border-radius: 15px; border: 2px solid var(--neon-cyan); display: inline-block; min-width: 320px;">
+            <div id="connection-status" style="color: var(--neon-cyan); font-size: 20px; margin-bottom: 15px; font-weight: bold;">حالة الاتصال: غير متصل 🔴</div>
+            <div style="margin-bottom: 15px;">
+                <label for="tiktok-username" style="display:block; margin-bottom: 8px; font-size: 16px; color: #ccc;">أدخل يوزر التيك توك للاتصال بالبث:</label>
+                <input type="text" id="tiktok-username" placeholder="يوزر التيك توك | TikTok Username" style="padding: 10px; width: 90%; font-size: 18px; border-radius: 5px; border: 2px solid var(--neon-pink); background: rgba(0,0,0,0.8); color: #fff; text-align: center; outline: none; transition: 0.3s;" onfocus="this.style.borderColor='var(--neon-cyan)'" onblur="this.style.borderColor='var(--neon-pink)'">
+            </div>
+            <button id="connect-btn" class="cyber-btn" onclick="toggleConnection()" style="display: inline-block; width: auto; font-size: 18px; padding: 10px 40px; border-color: var(--neon-green); color: var(--neon-green);">
+                ⚡ بدء الاتصال باللايف
+            </button>
+        </div>
+    </div>
+
+    <!-- GAME GRID -->
+    <div class="game-grid">
+
+        <!-- Boys vs Girls - يفوز الأولاد والبنات -->
+        <div class="cyber-card card-battle" data-tilt data-tilt-glare data-tilt-max-glare="0.5" data-tilt-scale="1.05">
+
+            <div class="img-box" style="overflow:hidden;"><img src="/images/battle_cover.png" style="width:100%;height:100%;object-fit:cover;" alt="Boys vs Girls" onerror="this.src='https://placehold.co/400x220/ff416c/fff?text=Boys+vs+Girls'"></div>
+            <div class="card-content">
+                <h2>الأولاد ضد البنات</h2>
+                <p>أرسل الهدايا وانتصر لفريقك ضد الفريق الآخر</p>
+                
+                <div style="display: flex; gap: 10px; width: 100%; margin-top:15px;">
+                    <button class="cyber-btn"  style="flex:1; padding:10px 5px; font-size:16px; font-weight:bold; background: linear-gradient(45deg, #e30a17, #ff0044); border:none; color:white; border-radius: 8px; box-shadow: 0 4px 15px rgba(227,10,23,0.5);" onclick="startGame('/battle/index.html')">▶️ بدء (للبث)</button>
+                    <button class="cyber-btn" style="flex:1; padding:10px 5px; border:none; color: #fff; font-size:16px; font-weight:bold; background: linear-gradient(45deg, #11998e, #38ef7d); border-radius: 8px; box-shadow: 0 4px 15px rgba(56,239,125,0.5);" onclick="window.location.href='/battle/index.html?test=true'">🧪 تجربة</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Collection Game -->
+        <!-- Collection Game -->
+        <div class="cyber-card" data-tilt data-tilt-glare data-tilt-max-glare="0.5" data-tilt-scale="1.05">
+
+            <div class="img-box" style="overflow:hidden;"><img src="/images/collect_cover.png" style="width:100%;height:100%;object-fit:cover;" alt="Collection Game" onerror="this.src='https://placehold.co/400x220/11998e/fff?text=Collection'"></div>
+            <div class="card-content">
+                <h2>لعبة التجميع</h2>
+                <p>اجمع أكبر عدد من النقاط لتفوز</p>
+                
+                <div style="display: flex; gap: 10px; width: 100%; margin-top:15px;">
+                    <button class="cyber-btn"  style="flex:1; padding:10px 5px; font-size:16px; font-weight:bold; background: linear-gradient(45deg, #e30a17, #ff0044); border:none; color:white; border-radius: 8px; box-shadow: 0 4px 15px rgba(227,10,23,0.5);" onclick="startGame('/game-collect.html')">▶️ بدء (للبث)</button>
+                    <button class="cyber-btn" style="flex:1; padding:10px 5px; border:none; color: #fff; font-size:16px; font-weight:bold; background: linear-gradient(45deg, #11998e, #38ef7d); border-radius: 8px; box-shadow: 0 4px 15px rgba(56,239,125,0.5);" onclick="window.location.href='/game-collect.html?test=true'">🧪 تجربة</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Space Race -->
+        <!-- Space Race -->
+        <div class="cyber-card card-race" data-tilt data-tilt-glare data-tilt-max-glare="0.5" data-tilt-scale="1.05">
+
+            <div class="img-box" style="overflow:hidden;"><img src="/images/space_cover.png" style="width:100%;height:100%;object-fit:cover;" alt="Space Race" onerror="this.src='https://placehold.co/400x220/2b5876/fff?text=Space+Race'"></div>
+            <div class="card-content">
+                <h2>لعبة السباق</h2>
+                <p>أرسل الهدايا لتسريع سيارتك للفوز</p>
+                
+                <div style="display: flex; gap: 10px; width: 100%; margin-top:15px;">
+                    <button class="cyber-btn"  style="flex:1; padding:10px 5px; font-size:16px; font-weight:bold; background: linear-gradient(45deg, #e30a17, #ff0044); border:none; color:white; border-radius: 8px; box-shadow: 0 4px 15px rgba(227,10,23,0.5);" onclick="startGame('race-game.html')">▶️ بدء (للبث)</button>
+                    <button class="cyber-btn" style="flex:1; padding:10px 5px; border:none; color: #fff; font-size:16px; font-weight:bold; background: linear-gradient(45deg, #11998e, #38ef7d); border-radius: 8px; box-shadow: 0 4px 15px rgba(56,239,125,0.5);" onclick="window.location.href='race-game.html?test=true'">🧪 تجربة</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- حرب القلاع -->
+        <div class="cyber-card card-castle" data-tilt data-tilt-glare data-tilt-max-glare="0.5" data-tilt-scale="1.05">
+
+            <div class="img-box" style="overflow:hidden;"><img src="/images/castle_cover.png" style="width:100%;height:100%;object-fit:cover;" alt="Castle War" onerror="this.src='https://placehold.co/400x220/4b134f/fff?text=Castle+War'"></div>
+            <div class="card-content">
+                <h2>حرب القلعة</h2>
+                <p>دافع عن قلعتك وهاجم قلعة الخصم</p>
+                
+                <div style="display: flex; gap: 10px; width: 100%; margin-top:15px;">
+                    <button class="cyber-btn"  style="flex:1; padding:10px 5px; font-size:16px; font-weight:bold; background: linear-gradient(45deg, #e30a17, #ff0044); border:none; color:white; border-radius: 8px; box-shadow: 0 4px 15px rgba(227,10,23,0.5);" onclick="startGame('boys_vs_girls/index.html')">▶️ بدء (للبث)</button>
+                    <button class="cyber-btn" style="flex:1; padding:10px 5px; border:none; color: #fff; font-size:16px; font-weight:bold; background: linear-gradient(45deg, #11998e, #38ef7d); border-radius: 8px; box-shadow: 0 4px 15px rgba(56,239,125,0.5);" onclick="window.location.href='boys_vs_girls/index.html?test=true'">🧪 تجربة</button>
+                </div>
+            </div>
+        </div>
+
+        
+        <!-- Tug of War -->
+        <div class="cyber-card card-race" data-tilt data-tilt-glare data-tilt-max-glare="0.5" data-tilt-scale="1.05">
+
+            <div class="img-box" style="overflow:hidden;"><img src="/images/tug_of_war.png" style="width:100%;height:100%;object-fit:cover;" alt="Tug of War" onerror="this.src='https://placehold.co/400x220/00aaff/fff?text=Tug+of+War'"></div>
+            <div class="card-content">
+                <h2>لعبة شد الحبل</h2>
+                <p>أحمر (تكبيس) ضد أزرق (شير)</p>
+                
+                <div style="display: flex; gap: 10px; width: 100%; margin-top:15px;">
+                    <button class="cyber-btn"  style="flex:1; padding:10px 5px; font-size:16px; font-weight:bold; background: linear-gradient(45deg, #e30a17, #ff0044); border:none; color:white; border-radius: 8px; box-shadow: 0 4px 15px rgba(227,10,23,0.5);" onclick="startGame('/tug_of_war/index.html')">▶️ بدء (للبث)</button>
+                    <button class="cyber-btn" style="flex:1; padding:10px 5px; border:none; color: #fff; font-size:16px; font-weight:bold; background: linear-gradient(45deg, #11998e, #38ef7d); border-radius: 8px; box-shadow: 0 4px 15px rgba(56,239,125,0.5);" onclick="window.location.href='/tug_of_war/index.html?test=true'">🧪 تجربة</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Teams Battle Game -->
+        <div class="cyber-card card-battle" data-tilt data-tilt-glare data-tilt-max-glare="0.5" data-tilt-scale="1.05">
+
+            <div class="img-box" style="overflow:hidden;"><img src="/images/teams_battle.png" style="width:100%;height:100%;object-fit:cover;" alt="Teams Battle" onerror="this.src='https://placehold.co/400x220/e94560/fff?text=Teams+Battle'"></div>
+            <div class="card-content">
+                <h2>تحدي الفرق | Teams Battle</h2>
+                <p>اختر الفرق وتحدّى! | Pick teams and battle!</p>
+                
+                <div style="display: flex; gap: 10px; width: 100%; margin-top:15px;">
+                    <button class="cyber-btn"  style="flex:1; padding:10px 5px; font-size:16px; font-weight:bold; background: linear-gradient(45deg, #e30a17, #ff0044); border:none; color:white; border-radius: 8px; box-shadow: 0 4px 15px rgba(227,10,23,0.5);" onclick="startGame('challenge/challenge.html')">▶️ بدء (للبث)</button>
+                    <button class="cyber-btn" style="flex:1; padding:10px 5px; border:none; color: #fff; font-size:16px; font-weight:bold; background: linear-gradient(45deg, #11998e, #38ef7d); border-radius: 8px; box-shadow: 0 4px 15px rgba(56,239,125,0.5);" onclick="window.location.href='challenge/challenge.html?test=true'">🧪 تجربة</button>
+                </div>
+            </div>
+        </div>
+
+                <!-- Mario Game -->
+        <div class="cyber-card card-race" data-tilt data-tilt-glare data-tilt-max-glare="0.5" data-tilt-scale="1.05">
+
+            <div class="img-box" style="overflow:hidden;"><img src="/images/mario_game.png" style="width:100%;height:100%;object-fit:cover;" alt="Mario Game" onerror="this.src='https://placehold.co/400x220/ff0000/fff?text=Mario'"></div>
+            <div class="card-content">
+                <h2>لعبة ماريو</h2>
+                <p>ساعد ماريو في تخطي العقبات بالهدايا والتكبيس</p>
+                
+                <div style="display: flex; gap: 10px; width: 100%; margin-top:15px;">
+                    <button class="cyber-btn" style="flex:1; padding:10px 5px; font-size:16px; font-weight:bold; background: linear-gradient(45deg, #e30a17, #ff0044); border:none; color:white; border-radius: 8px; box-shadow: 0 4px 15px rgba(227,10,23,0.5);" onclick="startGame('/mario_game/index.html')">▶️ بدء (للبث)</button>
+                    <button class="cyber-btn" style="flex:1; padding:10px 5px; border:none; color: #fff; font-size:16px; font-weight:bold; background: linear-gradient(45deg, #11998e, #38ef7d); border-radius: 8px; box-shadow: 0 4px 15px rgba(56,239,125,0.5);" onclick="window.location.href='/mario_game/index.html?test=true'">🧪 تجربة</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Falling Drops -->
+        <div class="cyber-card" data-tilt data-tilt-glare data-tilt-max-glare="0.5" data-tilt-scale="1.05">
+
+            <div class="img-box" style="overflow:hidden;"><img src="/images/falling_drops.png" style="width:100%;height:100%;object-fit:cover;" alt="Falling Drops"></div>
+            <div class="card-content">
+                <h2>تساقط الهدايا</h2>
+                <p>تفاعل فيزيائي مع الهدايا والإعجابات</p>
+                
+                <div style="display: flex; gap: 10px; width: 100%; margin-top:15px;">
+                    <button class="cyber-btn" style="flex:1; padding:10px 5px; font-size:16px; font-weight:bold; background: linear-gradient(45deg, #e30a17, #ff0044); border:none; color:white; border-radius: 8px; box-shadow: 0 4px 15px rgba(227,10,23,0.5);" onclick="startGame('/falling_drops/index.html')">▶️ بدء (للبث)</button>
+                    <button class="cyber-btn" style="flex:1; padding:10px 5px; border:none; color: #fff; font-size:16px; font-weight:bold; background: linear-gradient(45deg, #11998e, #38ef7d); border-radius: 8px; box-shadow: 0 4px 15px rgba(56,239,125,0.5);" onclick="window.location.href='/falling_drops/index.html?test=true'">🧪 تجربة</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Flag Race -->
+        <div class="cyber-card" data-tilt data-tilt-glare data-tilt-max-glare="0.5" data-tilt-scale="1.05">
+
+            <div class="img-box" style="overflow:hidden;"><img src="/images/world_flag_race.png" style="width:100%;height:100%;object-fit:cover;" alt="Flag Race"></div>
+            <div class="card-content">
+                <h2>سباق الأعلام العالمي</h2>
+                <p>اكتب اسم دولتك في الشات للتصويت!</p>
+                
+                <div style="display: flex; gap: 10px; width: 100%; margin-top:15px;">
+                    <button class="cyber-btn" style="flex:1; padding:10px 5px; font-size:16px; font-weight:bold; background: linear-gradient(45deg, #e30a17, #ff0044); border:none; color:white; border-radius: 8px; box-shadow: 0 4px 15px rgba(227,10,23,0.5);" onclick="startGame('/flag_race/index.html')">▶️ بدء (للبث)</button>
+                    <button class="cyber-btn" style="flex:1; padding:10px 5px; border:none; color: #fff; font-size:16px; font-weight:bold; background: linear-gradient(45deg, #11998e, #38ef7d); border-radius: 8px; box-shadow: 0 4px 15px rgba(56,239,125,0.5);" onclick="window.location.href='/flag_race/index.html?test=true'">🧪 تجربة</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Screen Alerts -->
+        <div class="cyber-card" data-tilt data-tilt-glare data-tilt-max-glare="0.5" data-tilt-scale="1.05"  style="border-color:#b026ff;"">
+
+            <div class="img-box" style="background: linear-gradient(135deg, #1a0b2e, #b026ff); display: flex; align-items: center; justify-content: center; flex-direction: column; gap:5px;">
+                <span style="font-size:42px;">🎁 🎉 ⭐ 🔗</span>
+                <span style="font-size:18px; color:#fff; font-weight:700;">Screen Alerts Overlay</span>
+            </div>
+            <div class="card-content">
+                <h2>تنبيهات الشاشة</h2>
+                <p>تنبيهات منبثقة للهدايا، المتابعين، التكبيسات — تحتاج لـ OBS</p>
+                
+                <div style="display: flex; gap: 10px; width: 100%; margin-top:15px;">
+                    <button class="cyber-btn" style="flex:1; padding:10px 5px; font-size:16px; font-weight:bold; background: linear-gradient(45deg, #e30a17, #ff0044); border:none; color:white; border-radius: 8px; box-shadow: 0 4px 15px rgba(227,10,23,0.5);" onclick="startGame('/alerts/index.html')">▶️ بدء (للبث)</button>
+                    <button class="cyber-btn" style="flex:1; padding:10px 5px; border:none; color: #fff; font-size:16px; font-weight:bold; background: linear-gradient(45deg, #11998e, #38ef7d); border-radius: 8px; box-shadow: 0 4px 15px rgba(56,239,125,0.5);" onclick="window.location.href='/alerts/index.html?test=true'">🧪 تجربة</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Screen King -->
+        <div class="cyber-card" data-tilt data-tilt-glare data-tilt-max-glare="0.5" data-tilt-scale="1.05"  style="border-color:#ffd700;"">
+
+            <div class="img-box" style="overflow:hidden;"><img src="/images/screen_king.png" style="width:100%;height:100%;object-fit:cover;" alt="Screen King"></div>
+            <div class="card-content">
+                <h2>ملك الشاشة 👑</h2>
+                <p>أكبر داعم يظهر كـ ملك بصورته وتاجه المضيء!</p>
+                
+                <div style="display: flex; gap: 10px; width: 100%; margin-top:15px;">
+                    <button class="cyber-btn" style="flex:1; padding:10px 5px; font-size:16px; font-weight:bold; background: linear-gradient(45deg, #e30a17, #ff0044); border:none; color:white; border-radius: 8px; box-shadow: 0 4px 15px rgba(227,10,23,0.5);" onclick="startGame('/screen_king/index.html')">▶️ بدء (للبث)</button>
+                    <button class="cyber-btn" style="flex:1; padding:10px 5px; border:none; color: #fff; font-size:16px; font-weight:bold; background: linear-gradient(45deg, #11998e, #38ef7d); border-radius: 8px; box-shadow: 0 4px 15px rgba(56,239,125,0.5);" onclick="window.location.href='/screen_king/index.html?test=true'">🧪 تجربة</button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+
+
+    <!-- 3D Tilt Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/vanilla-tilt/1.8.0/vanilla-tilt.min.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+
+    <!-- ===== SIMULATION PANEL ===== -->
+    <style>
+        #sim-panel {
+            position: fixed; bottom: 20px; left: 20px;
+            background: rgba(0,0,0,0.85);
+            border: 2px solid var(--neon-purple);
+            border-radius: 16px; padding: 18px;
+            z-index: 9999; width: 280px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 0 30px rgba(176,38,255,0.3);
+            transition: transform 0.3s ease;
+        }
+        #sim-panel.collapsed { transform: translateY(calc(100% - 48px)); }
+        #sim-toggle {
+            width: 100%; background: transparent; border: none;
+            color: #b026ff; font-size: 16px; font-weight: 900;
+            font-family: 'Changa',sans-serif; cursor: pointer;
+            text-align: right; padding: 0 0 12px 0;
+            border-bottom: 1px solid rgba(176,38,255,0.3);
+            margin-bottom: 12px;
+        }
+        .sim-btn {
+            display: block; width: 100%;
+            background: rgba(176,38,255,0.15);
+            border: 1px solid var(--neon-purple);
+            color: #fff; padding: 8px 14px;
+            border-radius: 8px; margin-bottom: 8px;
+            font-family: 'Changa',sans-serif; font-size: 15px;
+            cursor: pointer; text-align: right; transition: 0.2s;
+        }
+        .sim-btn:hover { background: rgba(176,38,255,0.4); }
+        .sim-btn:active { transform: scale(0.97); }
+        #sim-chat-input {
+            width: 100%; padding: 7px 10px;
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 8px; color: #fff;
+            font-family: 'Changa',sans-serif; font-size: 15px;
+            margin-bottom: 8px;
+        }
+    </style>
+    <div id="sim-panel" class="collapsed" style="border-top: 3px solid #ff0050; background: rgba(0,0,0,0.9);">
+        <button id="sim-toggle" style="background: linear-gradient(90deg, #ff0050, #00f2fe); font-size: 18px;" onclick="document.getElementById('sim-panel').classList.toggle('collapsed')">
+            🎮 لوحة تحكم التنبيهات والبث | Stream Control Panel
+        </button>
+        <button class="sim-btn" onclick="simulate('gift', {giftName:'Rose', diamonds:1, count:1})">🌹 هدية وهمية (وردة)</button>
+        <button class="sim-btn" onclick="simulate('gift', {giftName:'Lion', diamonds:100, count:5})">🦁 هدية وهمية (أسد ×5)</button>
+        <button class="sim-btn" onclick="simulate('like', {count:100, total:1000})">❤️ 100 تكبيسة</button>
+        <button class="sim-btn" onclick="simulate('like', {count:900, total:1000})">💥 900 تكبيسة (وصول 1000)</button>
+        <button class="sim-btn" onclick="simulate('follow', {})">➕ متابع وهمي</button>
+        <button class="sim-btn" onclick="simulate('share', {})">🔗 شير وهمي</button>
+        <button class="sim-btn" onclick="simulate('subscribe', {})">⭐ اشتراك وهمي</button>
+        <input id="sim-chat-input" placeholder="اكتب تعليق للتجربة..." value="السعودية">
+        <button class="sim-btn" onclick="simulate('chat', {text: document.getElementById('sim-chat-input').value})">💬 إرسال تعليق وهمي</button>
+    </div>
+    <script>
+        async function simulate(type, data) {
+            try {
+                const res = await fetch('/api/simulate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ type, data })
+                });
+                if (!res.ok) console.warn('Simulation failed:', await res.text());
+            } catch(e) { console.error('Simulate error:', e); }
+        }
+    </script>
+    <!-- ===== END SIMULATION PANEL ===== -->
+    <script>
+        const socket = io();
+        let isConnected = false;
+        let savedUsername = localStorage.getItem('tiktokUsername');
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            const usernameInput = document.getElementById('tiktok-username');
+            const connectBtn = document.getElementById('connect-btn');
+            const changeAccountBtn = document.getElementById('change-account-btn');
+            
+            // Always keep input visible
+            usernameInput.style.display = 'inline-block';
+            
+            if (changeAccountBtn) {
+                changeAccountBtn.style.display = 'none';
+            }
+            
+            if (savedUsername) {
+                usernameInput.value = savedUsername;
+                connectBtn.innerHTML = '⚡ بدء الاتصال';
+            } else {
+                connectBtn.innerHTML = '⚡ بدء الاتصال باللايف';
+            }
+        });
+
+        function toggleConnection() {
+            const usernameInput = document.getElementById('tiktok-username');
+            const statusEl = document.getElementById('connection-status');
+            const connectBtn = document.getElementById('connect-btn');
+            
+            if (isConnected) {
+                window.location.reload();
+                return;
+            }
+            
+            let user = usernameInput.value.trim();
+            if (!user) {
+                alert('الرجاء إدخال يوزر التيك توك أولاً!');
+                return;
+            }
+            
+            localStorage.setItem('tiktokUsername', user);
+            savedUsername = user;
+            
+            statusEl.innerHTML = 'جاري الاتصال... ⏳';
+            statusEl.style.color = '#ffcc00';
+            connectBtn.disabled = true;
+            
+            socket.emit('connectTikTok', user);
+        }
+        
+        function changeAccount() {
+            // No longer needed as input is always visible, but keep for safety if button exists
+            localStorage.removeItem('tiktokUsername');
+            savedUsername = '';
+            document.getElementById('tiktok-username').value = '';
+            document.getElementById('tiktok-username').style.display = 'inline-block';
+            const changeBtn = document.getElementById('change-account-btn');
+            if (changeBtn) changeBtn.style.display = 'none';
+            document.getElementById('connect-btn').innerHTML = '⚡ بدء الاتصال باللايف';
+        }
+
+        socket.on('tiktokConnected', () => {
+            isConnected = true;
+            const statusEl = document.getElementById('connection-status');
+            const connectBtn = document.getElementById('connect-btn');
+            statusEl.innerHTML = 'متصل باللايف بنجاح 🟢';
+            statusEl.style.color = 'var(--neon-green)';
+            connectBtn.innerHTML = '🛑 إنهاء الاتصال';
+            connectBtn.disabled = false;
+            connectBtn.style.borderColor = 'var(--neon-pink)';
+            connectBtn.style.color = 'var(--neon-pink)';
+        });
+
+        socket.on('tiktokError', (err) => {
+            alert('خطأ في الاتصال: ' + err);
+            const statusEl = document.getElementById('connection-status');
+            const connectBtn = document.getElementById('connect-btn');
+            statusEl.innerHTML = 'فشل الاتصال 🔴';
+            statusEl.style.color = 'var(--neon-pink)';
+            connectBtn.disabled = false;
+        });
+
+        socket.on('tiktokDisconnected', () => {
+            isConnected = false;
+            const statusEl = document.getElementById('connection-status');
+            const connectBtn = document.getElementById('connect-btn');
+            statusEl.innerHTML = 'تم إنهاء الاتصال 🔴';
+            statusEl.style.color = 'var(--neon-pink)';
+            connectBtn.innerHTML = '⚡ بدء الاتصال باللايف';
+            connectBtn.style.borderColor = 'var(--neon-green)';
+            connectBtn.style.color = 'var(--neon-green)';
+        });
+
+        // Start Audio on First Interaction (Browser Autoplay Policy)
+        document.body.addEventListener('click', () => {
+            const audio = document.getElementById('bg-audio');
+            if (audio && audio.paused) {
+                audio.play().catch(e => console.log('Audio play failed', e));
+                audio.volume = 0.3; // Make it relaxing and not too loud
+            }
+        }, { once: true });
+
+        
+        function toggleMute() {
+            const audio = document.getElementById('bg-audio');
+            const btn = document.getElementById('mute-btn');
+            if (audio.muted) {
+                audio.muted = false;
+                btn.innerHTML = '🔊';
+            } else {
+                audio.muted = true;
+                btn.innerHTML = '🔇';
+            }
+        }
+\n        // Init 3D Tilt
+        VanillaTilt.init(document.querySelectorAll(".cyber-card"), {
+            max: 15,
+            speed: 400,
+            glare: true,
+            "max-glare": 0.3
+        });
+
+        // User Auth Logic
+        async function checkUser() {
+            try {
+                const res = await fetch('/api/me');
+                if(!res.ok) return;
+                const user = await res.json();
+                
+                if (user.role === 'admin') {
+                    document.getElementById('admin-link').style.display = 'inline-block';
+                    document.getElementById('vip-balance').style.display = 'block';
+                    document.getElementById('vip-username').textContent = '';
+                    document.getElementById('vip-days').textContent = ' ';
+                } else if (user.expiry_date) {
+                    const expiry = new Date(user.expiry_date);
+                    const now = new Date();
+                    const diffTime = Math.abs(expiry - now);
+                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                    
+                    document.getElementById('vip-balance').style.display = 'block';
+                    document.getElementById('vip-username').textContent = user.username;
+                    document.getElementById('vip-days').textContent = diffDays;
+                }
+            } catch (e) {
+                console.error('Failed to fetch user info');
+            }
+        }
+        checkUser();
+    </script>
+
+<!-- Language Switcher -->
+<style>
+  .lang-btn {
+    position: fixed;
+    top: 15px;
+    left: 15px;
+    z-index: 9999;
+    background: linear-gradient(135deg, #00f2fe, #4facfe);
+    color: #fff;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-weight: bold;
+    cursor: pointer;
+    font-family: 'Cairo', sans-serif;
+    box-shadow: 0 4px 15px rgba(0,242,254,0.4);
+    transition: transform 0.2s;
+  }
+  .lang-btn:hover { transform: scale(1.05); }
+  .lang-ar { display: inline; }
+  .lang-en { display: none; }
+  body.en-mode .lang-ar { display: none; }
+  body.en-mode .lang-en { display: inline; }
+</style>
+<button class="lang-btn" onclick="toggleLang()" id="langToggleBtn">English</button>
+<script>
+  function applyLangToTextNodes(node) {
+    if (node.nodeType === 3) {
+      const text = node.nodeValue;
+      if (text.includes(' | ')) {
+        const parts = text.split(' | ');
+        if (parts.length === 2) {
+          const span = document.createElement('span');
+          span.innerHTML = '<span class="lang-en">' + parts[0] + '</span><span class="lang-ar">' + parts[1] + '</span>';
+          node.parentNode.replaceChild(span, node);
+        }
+      }
+    } else if (node.nodeType === 1 && node.nodeName !== 'SCRIPT' && node.nodeName !== 'STYLE') {
+      for (let i = 0; i < node.childNodes.length; i++) {
+        applyLangToTextNodes(node.childNodes[i]);
+      }
+    }
+  }
+
+  // Initial apply
+  document.addEventListener("DOMContentLoaded", () => {
+    applyLangToTextNodes(document.body);
+    
+    // Also handle input placeholders
+    const inputs = document.querySelectorAll('input, textarea');
+    inputs.forEach(input => {
+        if(input.placeholder && input.placeholder.includes(' | ')) {
+            const parts = input.placeholder.split(' | ');
+            input.setAttribute('data-en-placeholder', parts[0]);
+            input.setAttribute('data-ar-placeholder', parts[1]);
+            input.placeholder = document.body.classList.contains('en-mode') ? parts[0] : parts[1];
+        }
+    });
+    
+    // Load saved lang
+    if (localStorage.getItem('preferred_lang') === 'en') {
+        document.body.classList.add('en-mode');
+        document.getElementById('langToggleBtn').innerText = 'عربي';
+        updatePlaceholders();
+    }
+  });
+
+  function updatePlaceholders() {
+    const isEn = document.body.classList.contains('en-mode');
+    const inputs = document.querySelectorAll('input[data-en-placeholder]');
+    inputs.forEach(input => {
+        input.placeholder = isEn ? input.getAttribute('data-en-placeholder') : input.getAttribute('data-ar-placeholder');
+    });
+  }
+
+  function toggleLang() {
+    document.body.classList.toggle('en-mode');
+    const isEn = document.body.classList.contains('en-mode');
+    document.getElementById('langToggleBtn').innerText = isEn ? 'عربي' : 'English';
+    localStorage.setItem('preferred_lang', isEn ? 'en' : 'ar');
+    updatePlaceholders();
+  }
+</script>
+
+<style>
+  /* Custom Cursor for Match */
+  * { cursor: none !important; }
+  .match-cursor {
+    width: 20px; height: 20px; border: 2px solid white; border-radius: 50%;
+    position: fixed; pointer-events: none; z-index: 99999;
+    transform: translate(-50%, -50%); transition: transform 0.1s;
+    background: radial-gradient(circle, #ffcc00 0%, transparent 80%);
+    box-shadow: 0 0 10px #ffcc00, 0 0 20px #0055ff;
+  }
+  .match-cursor-dot {
+    width: 6px; height: 6px; background: #0055ff; border-radius: 50%;
+    position: fixed; pointer-events: none; z-index: 100000;
+    transform: translate(-50%, -50%);
+  }
+</style>
+<div class="match-cursor" id="m-cursor"></div>
+<div class="match-cursor-dot" id="m-cursor-dot"></div>
+<script>
+  document.addEventListener('mousemove', (e) => {
+    document.getElementById('m-cursor').style.left = e.clientX + 'px';
+    document.getElementById('m-cursor').style.top = e.clientY + 'px';
+    document.getElementById('m-cursor-dot').style.left = e.clientX + 'px';
+    document.getElementById('m-cursor-dot').style.top = e.clientY + 'px';
+  });
+  document.addEventListener('mousedown', () => {
+    document.getElementById('m-cursor').style.transform = 'translate(-50%, -50%) scale(0.8)';
+  });
+  document.addEventListener('mouseup', () => {
+    document.getElementById('m-cursor').style.transform = 'translate(-50%, -50%) scale(1)';
+  });
+</script>
+
+
+<script>
+function startGame(url) {
+    const user = localStorage.getItem('tiktokUsername');
+    if(user) {
+        window.location.href = url + (url.includes('?') ? '&' : '?') + 'user=' + encodeURIComponent(user);
+    } else {
+        window.location.href = url;
+    }
+}
+</script>
+</body>
+</html>

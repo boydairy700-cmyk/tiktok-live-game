@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لوحة تحكم الإدارة | Admin Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/style.css">
+    <link rel="stylesheet" href="/cursor.css">
+    <style>
+        :root {
+            --primary: #00f2fe;
+            --secondary: #4facfe;
+            --danger: #ff4b2b;
+            --danger-hover: #e94560;
+            --success: #00ff88;
+            --bg-dark: #0a0a14;
+            --panel-bg: rgba(20, 20, 35, 0.8);
+        }
+
+        body {
+            font-family: 'Cairo', sans-serif;
+            background: var(--bg-dark);
+            color: #fff;
+            margin: 0;
+            padding: 40px;
+            min-height: 100vh;
+            background-image: 
+                radial-gradient(circle at 15% 50%, rgba(0, 242, 254, 0.08), transparent 25%),
+                radial-gradient(circle at 85% 30%, rgba(255, 75, 43, 0.08), transparent 25%);
+        }
+
+        .dashboard-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 40px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 32px;
+            font-weight: 900;
+            background: linear-gradient(135deg, #fff, var(--primary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .btn {
+            padding: 12px 25px;
+            border-radius: 12px;
+            border: none;
+            font-family: 'Cairo', sans-serif;
+            font-weight: 800;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+        }
+
+        .btn-add {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: #000;
+            box-shadow: 0 5px 15px rgba(0, 242, 254, 0.3);
+        }
+        .btn-add:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0, 242, 254, 0.5); }
+
+        .btn-small { padding: 8px 15px; font-size: 14px; border-radius: 8px; }
+        
+        .btn-renew { background: rgba(0, 242, 254, 0.1); color: var(--primary); border: 1px solid var(--primary); }
+        .btn-renew:hover { background: var(--primary); color: #000; }
+        
+        .btn-delete { background: rgba(255, 75, 43, 0.1); color: var(--danger); border: 1px solid var(--danger); }
+        .btn-delete:hover { background: var(--danger); color: #fff; }
+
+        .glass-panel {
+            background: var(--panel-bg);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.05);
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 20px;
+            text-align: right;
+            border-bottom: 1px solid rgba(255,255,255,0.03);
+        }
+
+        th {
+            background: rgba(0, 0, 0, 0.3);
+            font-size: 14px;
+            color: #888;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        td { font-size: 16px; font-weight: 600; }
+
+        tr:hover td { background: rgba(255,255,255,0.02); }
+
+        .status-badge {
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 800;
+        }
+
+        .status-active { background: rgba(0, 255, 136, 0.1); color: var(--success); border: 1px solid var(--success); }
+        .status-expired { background: rgba(255, 75, 43, 0.1); color: var(--danger); border: 1px solid var(--danger); }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85);
+            backdrop-filter: blur(5px);
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        .modal.show { display: flex; opacity: 1; }
+
+        .modal-content {
+            background: #141423;
+            padding: 40px;
+            border-radius: 24px;
+            width: 100%;
+            max-width: 450px;
+            border: 1px solid rgba(255,255,255,0.1);
+            transform: scale(0.9);
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+        }
+        .modal.show .modal-content { transform: scale(1); }
+
+        .modal h2 { margin-top: 0; margin-bottom: 25px; font-weight: 900; }
+
+        input {
+            width: 100%;
+            padding: 15px;
+            margin-bottom: 20px;
+            background: rgba(0,0,0,0.3);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: #fff;
+            border-radius: 12px;
+            font-family: 'Cairo', sans-serif;
+            font-size: 16px;
+            outline: none;
+            transition: 0.3s;
+        }
+        input:focus { border-color: var(--primary); box-shadow: 0 0 15px rgba(0, 242, 254, 0.2); }
+
+        .quick-days {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .quick-btn {
+            flex: 1;
+            padding: 10px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: #fff;
+            border-radius: 10px;
+            cursor: pointer;
+            font-family: 'Cairo', sans-serif;
+            font-weight: 800;
+            transition: 0.3s;
+        }
+        .quick-btn:hover, .quick-btn.active {
+            background: var(--primary);
+            color: #000;
+            border-color: var(--primary);
+        }
+
+        .submit-btn {
+            width: 100%;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: #000;
+            padding: 15px;
+            border: none;
+            border-radius: 12px;
+            font-family: 'Cairo', sans-serif;
+            font-size: 18px;
+            font-weight: 900;
+            cursor: pointer;
+            margin-bottom: 15px;
+            box-shadow: 0 5px 15px rgba(0, 242, 254, 0.2);
+        }
+
+        .cancel-btn {
+            width: 100%;
+            background: transparent;
+            color: #888;
+            border: none;
+            cursor: pointer;
+            font-family: 'Cairo', sans-serif;
+            font-weight: 700;
+        }
+        .cancel-btn:hover { color: #fff; }
+
+        .actions-cell {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <div class="header">
+            <h1>لوحة الإدارة والمشتركين</h1>
+            <button class="btn btn-add" onclick="openAddModal()">+ إضافة مشترك جديد</button>
+        </div>
+
+        <div class="glass-panel">
+            <table id="users-table">
+                <thead>
+                    <tr>
+                        <th>المستخدم</th>
+                        <th>تاريخ الانتهاء</th>
+                        <th>الحالة</th>
+                        <th style="text-align: left;">الإجراءات</th>
+                    </tr>
+                </thead>
+                <tbody id="users-body">
+                    <tr><td colspan="4" style="text-align: center;">جاري التحميل...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Modal for Add/Renew -->
+    <div id="modal" class="modal">
+        <div class="modal-content">
+            <h2 id="modal-title">إضافة مشترك</h2>
+            
+            <div id="add-fields">
+                <input type="text" id="m-username" placeholder="اسم المستخدم" autocomplete="off">
+                <input type="password" id="m-password" placeholder="كلمة المرور">
+            </div>
+
+            <div style="margin-bottom: 10px; font-weight: 800; color: #888; font-size: 14px;">مدة الاشتراك (بالأيام)</div>
+            <div class="quick-days">
+                <button class="quick-btn active" onclick="setDays(30, this)">30 يوم</button>
+                <button class="quick-btn" onclick="setDays(60, this)">60 يوم</button>
+                <button class="quick-btn" onclick="setDays(90, this)">90 يوم</button>
+            </div>
+            
+            <input type="number" id="m-days" value="30" style="display: none;">
+            
+            <input type="hidden" id="m-mode" value="add">
+            <input type="hidden" id="m-userid" value="">
+
+            <button class="submit-btn" onclick="submitModal()">حفظ البيانات</button>
+            <button class="cancel-btn" onclick="closeModal()">إلغاء</button>
+        </div>
+    </div>
+
+    <script src="/cursor.js"></script>
+    <script>
+        async function loadUsers() {
+            try {
+                const res = await fetch('/api/users');
+                const users = await res.json();
+                const body = document.getElementById('users-body');
+                body.innerHTML = '';
+                
+                if (users.length === 0) {
+                    body.innerHTML = '<tr><td colspan="4" style="text-align: center; color: #888;">لا يوجد مشتركين حالياً</td></tr>';
+                    return;
+                }
+
+                users.forEach(u => {
+                    const expiry = new Date(u.expiry_date);
+                    const isExpired = expiry < new Date();
+                    
+                    const statusBadge = isExpired 
+                        ? '<span class="status-badge status-expired">منتهي الصلاحية</span>' 
+                        : '<span class="status-badge status-active">نشط</span>';
+                    
+                    body.innerHTML += `
+                        <tr>
+                            <td>${u.username}</td>
+                            <td style="font-family: monospace; font-size: 16px;">${expiry.toLocaleDateString('en-GB')}</td>
+                            <td>${statusBadge}</td>
+                            <td class="actions-cell">
+                                <button class="btn btn-small btn-renew" onclick="openRenewModal(${u.id}, '${u.username}')">تجديد</button>
+                                <button class="btn btn-small btn-delete" onclick="deleteUser(${u.id}, '${u.username}')">حذف</button>
+                            </td>
+                        </tr>
+                    `;
+                });
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        function openAddModal() {
+            document.getElementById('modal-title').innerText = 'إضافة مشترك جديد';
+            document.getElementById('add-fields').style.display = 'block';
+            document.getElementById('m-mode').value = 'add';
+            document.getElementById('m-username').value = '';
+            document.getElementById('m-password').value = '';
+            resetDays();
+            
+            const modal = document.getElementById('modal');
+            modal.style.display = 'flex';
+            setTimeout(() => modal.classList.add('show'), 10);
+        }
+
+        function openRenewModal(id, username) {
+            document.getElementById('modal-title').innerText = 'تجديد اشتراك: ' + username;
+            document.getElementById('add-fields').style.display = 'none';
+            document.getElementById('m-mode').value = 'renew';
+            document.getElementById('m-userid').value = id;
+            resetDays();
+            
+            const modal = document.getElementById('modal');
+            modal.style.display = 'flex';
+            setTimeout(() => modal.classList.add('show'), 10);
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('modal');
+            modal.classList.remove('show');
+            setTimeout(() => modal.style.display = 'none', 300);
+        }
+
+        function setDays(days, btnElement) {
+            document.getElementById('m-days').value = days;
+            document.querySelectorAll('.quick-btn').forEach(b => b.classList.remove('active'));
+            btnElement.classList.add('active');
+        }
+
+        function resetDays() {
+            document.getElementById('m-days').value = 30;
+            document.querySelectorAll('.quick-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.quick-btn')[0].classList.add('active');
+        }
+
+        async function submitModal() {
+            try {
+                const mode = document.getElementById('m-mode').value;
+                const days = document.getElementById('m-days').value;
+                
+                if (mode === 'add') {
+                    const username = document.getElementById('m-username').value;
+                    const password = document.getElementById('m-password').value;
+                    if(!username || !password) return alert('يرجى ملء جميع الحقول');
+                    
+                    const res = await fetch('/api/users', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ username, password, days })
+                    });
+
+                    if (res.ok) {
+                        closeModal();
+                        loadUsers();
+                    } else {
+                        try {
+                            const errData = await res.json();
+                            alert('خطأ: ' + (errData.error || 'غير معروف'));
+                        } catch(e) {
+                            alert('خطأ: الخادم لا يستجيب بشكل صحيح.');
+                        }
+                    }
+                } else if (mode === 'renew') {
+                    const id = document.getElementById('m-userid').value;
+                    
+                    const res = await fetch(`/api/users/${id}/renew`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ days })
+                    });
+
+                    if (res.ok) {
+                        closeModal();
+                        loadUsers();
+                    } else {
+                        try {
+                            const errData = await res.json();
+                            alert('خطأ أثناء التجديد: ' + (errData.error || 'غير معروف'));
+                        } catch(e) {
+                            alert('خطأ: الخادم لا يستجيب بشكل صحيح.');
+                        }
+                    }
+                }
+            } catch (error) {
+                alert('حدث خطأ في النظام: ' + error.message);
+                console.error(error);
+            }
+        }
+
+        async function deleteUser(id, username) {
+            if (!confirm(`هل أنت متأكد من حذف المستخدم ${username} نهائياً؟`)) return;
+            await fetch('/api/users/' + id, { method: 'DELETE' });
+            loadUsers();
+        }
+
+        document.addEventListener("DOMContentLoaded", loadUsers);
+    </script>
+</body>
+</html>

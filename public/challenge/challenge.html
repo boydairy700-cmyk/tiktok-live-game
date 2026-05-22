@@ -1,0 +1,1495 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>    </title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet">
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="gifts-db.js"></script>
+    <script src="faces.js"></script>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        
+        body {
+            font-family: 'Cairo', sans-serif;
+            background: #05050a;
+            color: white;
+            overflow: hidden;
+            width: 100vw; height: 100vh;
+        }
+
+        /*  SETUP PANEL  */
+        #setup-panel {
+            position: fixed; inset: 0; z-index: 200;
+            background: radial-gradient(circle at center, #1a1a2e 0%, #05050a 100%);
+            display: flex; align-items: center; justify-content: center;
+        }
+        .setup-box {
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 24px;
+            padding: 40px;
+            width: 520px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        .setup-box h2 { text-align: center; font-size: 28px; margin-bottom: 30px; color: #ffd700; }
+        .setup-section { margin-bottom: 25px; }
+        .setup-section label { display: block; font-size: 13px; color: #aaa; margin-bottom: 6px; }
+        .setup-section input[type=text], .setup-section input[type=number], .setup-section select {
+            width: 100%; padding: 11px 14px;
+            background: rgba(255,255,255,0.07);
+            border: 1px solid rgba(255,255,255,0.12);
+            border-radius: 10px; color: white; font-size: 15px;
+            font-family: 'Cairo', sans-serif;
+        }
+        .section-title {
+            font-size: 14px; font-weight: 700; color: #ffd700;
+            border-bottom: 1px solid rgba(255,215,0,0.2);
+            padding-bottom: 8px; margin-bottom: 15px;
+        }
+        .gifts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .gift-row {
+            background: rgba(255,255,255,0.04);
+            border-radius: 10px; padding: 12px;
+            display: flex; flex-direction: column; gap: 8px;
+        }
+        .gift-row .gift-header { display: flex; align-items: center; gap: 8px; }
+        .gift-tag { font-size: 20px; }
+        .gift-name-input { flex: 1; }
+        .gift-pts { display: flex; align-items: center; gap: 6px; }
+        .gift-pts label { font-size: 12px; color: #888; white-space: nowrap; }
+        .gift-pts input { width: 70px; }
+        .team-label-boys { color: #00f2fe; font-weight: 700; }
+        .team-label-girls { color: #ffcc00; font-weight: 700; }
+        .btn-primary {
+            width: 100%; padding: 14px;
+            background: linear-gradient(135deg, #ffcc00, #ffa500);
+            color: white; border: none; border-radius: 12px;
+            font-size: 18px; font-weight: 700; cursor: pointer;
+            box-shadow: 0 0 20px rgba(255,204,0,0.4);
+            transition: 0.3s; font-family: 'Cairo', sans-serif;
+        }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 0 30px rgba(255,204,0,0.6); }
+        .btn-secondary {
+            width: 100%; padding: 12px;
+            background: rgba(255,255,255,0.06);
+            border: 1px solid #00f2fe; color: #00f2fe;
+            border-radius: 12px; font-size: 16px; font-weight: 700;
+            cursor: pointer; margin-top: 10px;
+            font-family: 'Cairo', sans-serif;
+        }
+        /* ━━━ GIFT PICKER — Premium TikTok Style ━━━ */
+        .gift-picker-header { margin-bottom: 12px; }
+        .gift-picker-tabs { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 6px; flex-wrap: wrap; }
+        .gpick-tab {
+            padding: 5px 14px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.1);
+            background: rgba(255,255,255,0.05); color: #888; cursor: pointer; font-size: 12px;
+            white-space: nowrap; transition: 0.2s; font-family: 'Cairo', sans-serif;
+        }
+        .gpick-tab.active { background: #fff; color: #000; border-color: #fff; font-weight: bold; }
+
+        /* Legend */
+        .gpick-legend {
+            display: flex; gap: 12px; align-items: center;
+            margin-top: 8px; padding: 8px 12px;
+            background: rgba(255,255,255,0.04);
+            border-radius: 10px; border: 1px solid rgba(255,255,255,0.06);
+            flex-wrap: wrap;
+        }
+        .gpick-legend-boys {
+            font-size: 13px; font-weight: 700; color: #00f2fe;
+            background: rgba(0,242,254,0.1); padding: 4px 12px;
+            border-radius: 20px; border: 1px solid rgba(0,242,254,0.3);
+        }
+        .gpick-legend-girls {
+            font-size: 13px; font-weight: 700; color: #ffcc00;
+            background: rgba(255,204,0,0.1); padding: 4px 12px;
+            border-radius: 20px; border: 1px solid rgba(255,204,0,0.3);
+        }
+
+        /* Gift Grid */
+        .gift-grid {
+            display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;
+            max-height: 380px; overflow-y: auto; padding: 4px 2px;
+        }
+        .gift-grid::-webkit-scrollbar { width: 5px; }
+        .gift-grid::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 3px; }
+
+        /* Gift Card */
+        .gift-card-v2 {
+            background: rgba(255,255,255,0.03);
+            border: 2px solid rgba(255,255,255,0.06);
+            border-radius: 14px; padding: 6px;
+            text-align: center; position: relative;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            user-select: none; cursor: pointer;
+        }
+        .gift-card-v2:hover { background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.25); transform: translateY(-3px); box-shadow: 0 8px 20px rgba(0,0,0,0.4); }
+
+        /* Image Area */
+        .gc-image-area {
+            height: 72px; display: flex; align-items: center;
+            justify-content: center; padding: 5px;
+            position: relative; cursor: pointer;
+        }
+        .gc-real-img {
+            width: 100%; height: 100%; object-fit: contain;
+            filter: drop-shadow(0 4px 8px rgba(0,0,0,0.5)) brightness(1.1);
+            transition: transform 0.3s;
+        }
+        .gift-card-v2:hover .gc-real-img { transform: scale(1.18) rotate(4deg); }
+
+        /* Team Badge (top-left corner) */
+        .gc-team-badge {
+            position: absolute; top: -6px; left: -6px;
+            width: 26px; height: 26px; border-radius: 50%;
+            display: none; align-items: center; justify-content: center;
+            font-size: 14px; z-index: 10;
+            border: 2px solid #1a1a2e;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.6);
+        }
+
+        /* Info Section */
+        .gc-info { padding: 2px 0; }
+        .gc-name {
+            font-size: 10px; color: #bbb; margin-bottom: 2px;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+            font-weight: 600;
+        }
+        .gc-diamonds { font-size: 10px; color: #ffd700; margin-bottom: 4px; }
+
+        /* Team pts buttons */
+        .gc-pts-row { display: flex; gap: 3px; }
+        .gc-pts {
+            flex: 1; border-radius: 8px; padding: 4px 2px;
+            cursor: pointer; transition: all 0.15s;
+            display: flex; flex-direction: column; align-items: center;
+            border: 1px solid rgba(255,255,255,0.08);
+            background: rgba(255,255,255,0.04);
+        }
+        .gc-pts:hover { transform: scale(1.05); }
+        .boys-pts { border-color: rgba(0,242,254,0.2); }
+        .boys-pts:hover { background: rgba(0,242,254,0.15); border-color: #00f2fe; }
+        .girls-pts { border-color: rgba(255,204,0,0.2); }
+        .girls-pts:hover { background: rgba(255,204,0,0.15); border-color: #ffcc00; }
+        .gc-pts-icon { font-size: 10px; }
+        .gc-pts-val { font-size: 9px; color: #aaa; font-weight: 700; }
+
+        /* ACTIVE STATES — very obvious! */
+        .gift-card-v2.active-boys {
+            border-color: #00f2fe;
+            background: rgba(0,242,254,0.08);
+            box-shadow: 0 0 20px rgba(0,242,254,0.35), inset 0 0 10px rgba(0,242,254,0.05);
+        }
+        .gift-card-v2.active-boys .boys-pts { background: rgba(0,242,254,0.25); border-color: #00f2fe; }
+        .gift-card-v2.active-boys .gc-pts-val { color: #00f2fe; }
+
+        .gift-card-v2.active-girls {
+            border-color: #ffcc00;
+            background: rgba(255,204,0,0.08);
+            box-shadow: 0 0 20px rgba(255,204,0,0.35), inset 0 0 10px rgba(255,204,0,0.05);
+        }
+        .gift-card-v2.active-girls .girls-pts { background: rgba(255,204,0,0.25); border-color: #ffcc00; }
+        .gift-card-v2.active-girls .gc-pts-val { color: #ffcc00; }
+
+        /* Footer */
+        .gift-picker-footer {
+            margin-top: 12px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+        }
+        .team-sel-preview {
+            background: rgba(255,255,255,0.03); border-radius: 10px; padding: 10px 12px;
+            display: flex; flex-direction: column; gap: 5px;
+            border: 1px solid rgba(255,255,255,0.06);
+        }
+        .boys-preview { border-right: 3px solid #00f2fe; }
+        .girls-preview { border-right: 3px solid #ffcc00; }
+        .p-label { font-size: 12px; color: #aaa; font-weight: bold; }
+        .p-list { font-size: 12px; color: #eee; min-height: 18px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+        .setup-box { width: 640px; border-radius: 30px; }
+
+        /*  BATTLE SCREEN  */
+        #battle-screen {
+            width: 100%; height: 100%;
+            position: relative;
+        }
+
+        .battle-bg {
+            position: absolute; inset: 0;
+            display: grid; grid-template-columns: 1fr 1fr;
+        }
+        .bg-boys {
+            background: linear-gradient(135deg, #0a1628 0%, #0f3460 50%, #1a1a2e 100%);
+        }
+        .bg-girls {
+            background: linear-gradient(225deg, #1a0010 0%, #5c0030 50%, #1a1a2e 100%);
+        }
+
+        /* BG particles */
+        @keyframes pulseBG { 0%,100%{opacity:0.5} 50%{opacity:1} }
+
+        /*  ROCKET ANIMATION  */
+        .rocket {
+            position: fixed;
+            font-size: 40px;
+            z-index: 300;
+            pointer-events: none;
+            transform-origin: center;
+        }
+        .rocket.boys-to-girls {
+            animation: rocketFlyRight 0.9s cubic-bezier(0.3,0,0.7,1) forwards;
+        }
+        .rocket.girls-to-boys {
+            animation: rocketFlyLeft 0.9s cubic-bezier(0.3,0,0.7,1) forwards;
+        }
+        @keyframes rocketFlyRight {
+            0%   { left:22%; top:45%; transform:scale(0.4) rotate(-45deg); opacity:1; }
+            50%  { top:38%; transform:scale(1) rotate(-45deg); opacity:1; }
+            85%  { left:72%; top:45%; transform:scale(0.9) rotate(-45deg); opacity:1; }
+            100% { left:74%; top:45%; transform:scale(2) rotate(-45deg); opacity:0; }
+        }
+        @keyframes rocketFlyLeft {
+            0%   { right:22%; top:45%; transform:scale(0.4) rotate(135deg); opacity:1; }
+            50%  { top:38%; transform:scale(1) rotate(135deg); opacity:1; }
+            85%  { right:72%; top:45%; transform:scale(0.9) rotate(135deg); opacity:1; }
+            100% { right:74%; top:45%; transform:scale(2) rotate(135deg); opacity:0; }
+        }
+        .explosion {
+            position: fixed; font-size: 60px; z-index: 301;
+            pointer-events: none;
+            animation: explode 0.6s ease-out forwards;
+        }
+        /*  START INSTRUCTIONS  */
+        #start-instruct {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.85); border: 2px solid #ffd700; border-radius: 20px;
+            padding: 30px; z-index: 1000; text-align: center;
+            display: none; animation: fadeInOut 4s forwards;
+            box-shadow: 0 0 30px rgba(255,215,0,0.3);
+            min-width: 300px;
+        }
+        .instruct-row { display: flex; align-items: center; justify-content: center; gap: 15px; margin: 15px 0; font-size: 20px; }
+        .instruct-btn { padding: 5px 15px; border-radius: 10px; font-weight: bold; }
+        .inst-boys { background: #00f2fe; color: #000; }
+        .inst-girls { background: #ffcc00; color: #fff; }
+
+        @keyframes fadeInOut {
+            0% { opacity: 0; transform: translate(-50%, -40%); }
+            10% { opacity: 1; transform: translate(-50%, -50%); }
+            90% { opacity: 1; transform: translate(-50%, -50%); }
+            100% { opacity: 0; transform: translate(-50%, -60%); pointer-events: none; }
+        }
+        @keyframes explode {
+            0%  { transform:scale(0.2); opacity:1; }
+            50% { transform:scale(1.8); opacity:1; }
+            100%{ transform:scale(2.5); opacity:0; }
+        }
+
+        /*  SPECIAL COMBAT ANIMATIONS  */
+        .laser-beam {
+            position: fixed; height: 10px; background: linear-gradient(90deg, transparent, #00ff00, #fff, #00ff00, transparent);
+            z-index: 300; pointer-events: none; box-shadow: 0 0 20px #00ff00;
+        }
+        .laser-beam.l-to-r { left: 20%; top: 45%; width: 0; animation: laserShootR 0.6s linear forwards; }
+        .laser-beam.r-to-l { right: 20%; top: 45%; width: 0; animation: laserShootL 0.6s linear forwards; }
+        @keyframes laserShootR { 0% { width: 0; } 50% { width: 60%; } 100% { width: 0; left: 80%; } }
+        @keyframes laserShootL { 0% { width: 0; } 50% { width: 60%; } 100% { width: 0; right: 80%; } }
+
+        .saw-anim {
+            position: fixed; font-size: 50px; z-index: 300; pointer-events: none;
+        }
+        .saw-anim.s-to-r { left: 20%; top: 45%; animation: sawMoveR 0.8s linear forwards; }
+        .saw-anim.s-to-l { right: 20%; top: 45%; animation: sawMoveL 0.8s linear forwards; }
+        @keyframes sawMoveR { 0% { left: 20%; transform: rotate(0); } 100% { left: 75%; transform: rotate(1440deg); } }
+        @keyframes sawMoveL { 0% { right: 20%; transform: rotate(0); } 100% { right: 75%; transform: rotate(-1440deg); } }
+
+        .tornado-anim {
+            position: fixed; font-size: 80px; z-index: 300; pointer-events: none;
+        }
+        .tornado-anim.t-to-r { left: 20%; top: 40%; animation: tornadoMoveR 1s ease-in forwards; }
+        .tornado-anim.t-to-l { right: 20%; top: 40%; animation: tornadoMoveL 1s ease-in forwards; }
+        @keyframes tornadoMoveR { 0% { left: 20%; opacity: 0.5; } 50% { transform: scale(1.5) rotate(720deg); opacity: 1; } 100% { left: 75%; opacity: 0; } }
+        @keyframes tornadoMoveL { 0% { right: 20%; opacity: 0.5; } 50% { transform: scale(1.5) rotate(-720deg); opacity: 1; } 100% { right: 75%; opacity: 0; } }
+        .admin-ctrl-panel {
+            position: fixed; top: 20px; right: 20px;
+            background: rgba(0,0,0,0.8); border: 1px solid #444; border-radius: 15px;
+            padding: 15px; z-index: 1001; width: 220px;
+            display: flex; flex-direction: column; gap: 10px;
+            opacity: 0.1; transition: opacity 0.3s;
+        }
+        .admin-ctrl-panel:hover { opacity: 1; }
+        .admin-ctrl-title { font-size: 12px; color: #ffd700; text-align: center; margin-bottom: 5px; font-weight: bold; }
+        .admin-row { display: flex; gap: 5px; justify-content: space-between; align-items: center; }
+        .admin-btn { 
+            padding: 4px 8px; font-size: 10px; border-radius: 5px; border: none; 
+            cursor: pointer; font-weight: bold; background: #333; color: white;
+        }
+        .admin-btn.btn-boys { background: #00f2fe; color: black; }
+        .admin-btn.btn-girls { background: #ffcc00; color: white; }
+        .admin-btn:hover { filter: brightness(1.2); }
+        .admin-label { font-size: 10px; color: #888; flex: 1; }
+
+        /* HP bars */
+        .hp-bar-wrap {
+            width: 180px; height: 14px;
+            background: rgba(0,0,0,0.4);
+            border-radius: 7px; overflow: hidden;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        .hp-bar {
+            height: 100%; border-radius: 7px;
+            transition: width 0.6s ease;
+        }
+        .hp-bar.boys { background: linear-gradient(90deg, #00f2fe, #4facfe); }
+        .hp-bar.girls { background: linear-gradient(90deg, #ffcc00, #ffa500); }
+
+        /* Combo display */
+        .combo-display {
+            position: fixed; z-index: 200; font-size: 36px; font-weight: 900;
+            pointer-events: none;
+            animation: comboPop 1.5s ease-out forwards;
+        }
+        @keyframes comboPop {
+            0%  { transform:scale(0) rotate(-10deg); opacity:1; }
+            20% { transform:scale(1.4) rotate(5deg); opacity:1; }
+            80% { transform:scale(1) rotate(0deg); opacity:1; }
+            100%{ transform:scale(0.5) translateY(-40px); opacity:0; }
+        }
+
+        /* Score Bar */
+        #score-bar-wrap {
+            position: absolute; top: 20px; left: 50%; transform: translateX(-50%);
+            width: 70%; z-index: 20;
+            display: flex; align-items: center; gap: 10px;
+        }
+        .team-score-label { font-size: 22px; font-weight: 900; }
+        .boys-score-label { color: #00f2fe; }
+        .girls-score-label { color: #ffcc00; }
+        #score-bar {
+            flex: 1; height: 28px; border-radius: 14px; overflow: hidden;
+            background: rgba(255,255,255,0.08);
+            border: 2px solid rgba(255,255,255,0.15);
+            display: flex;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+        }
+        #boys-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #00f2fe, #4facfe);
+            width: 50%;
+            transition: width 0.8s cubic-bezier(0.175,0.885,0.32,1.275);
+            box-shadow: 0 0 15px rgba(0,242,254,0.5);
+        }
+        #girls-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #ffcc00, #ffa500);
+            width: 50%;
+            transition: width 0.8s cubic-bezier(0.175,0.885,0.32,1.275);
+            box-shadow: 0 0 15px rgba(255,204,0,0.5);
+        }
+
+        /* Timer */
+        #timer {
+            position: absolute; top: 60px; left: 50%; transform: translateX(-50%);
+            z-index: 20; font-size: 32px; font-weight: 900;
+            background: rgba(0,0,0,0.8);
+            border: 2px solid rgba(255,255,255,0.2);
+            padding: 8px 35px; border-radius: 30px;
+            backdrop-filter: blur(15px);
+            transition: all 0.3s;
+            cursor: pointer;
+            user-select: none;
+        }
+        #timer.urgent { color: #ff4b2b; animation: timerPulse 0.4s infinite; border-color: #ff4b2b; box-shadow: 0 0 20px rgba(255,75,43,0.5); }
+        @keyframes timerPulse { 0%,100%{transform:translateX(-50%) scale(1)} 50%{transform:translateX(-50%) scale(1.1)} }
+        #timer-edit-panel {
+            position: absolute; top: 115px; left: 50%; transform: translateX(-50%);
+            z-index: 21; background: rgba(10,10,25,0.95);
+            border: 1px solid #00f2fe; border-radius: 12px;
+            padding: 15px 20px; display: none; gap: 10px; align-items: center;
+            backdrop-filter: blur(10px);
+        }
+        #timer-edit-panel.show { display: flex; }
+        #timer-edit-input { width: 80px; padding: 8px; background: rgba(255,255,255,0.1); border: 1px solid #00f2fe; border-radius: 8px; color: white; font-size: 18px; text-align: center; }
+        #timer-edit-confirm { padding: 8px 18px; background: #00f2fe; color: #000; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
+
+        /* VS Logo */
+        #vs-logo {
+            position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 30; font-size: 72px; font-weight: 900;
+            text-shadow: 0 0 30px rgba(255,255,255,0.5);
+            pointer-events: none;
+            transition: transform 0.1s;
+        }
+        #vs-logo.hit { animation: vsHit 0.3s ease-out; }
+        @keyframes vsHit {
+            0%{transform:translate(-50%,-50%) scale(1)}
+            50%{transform:translate(-50%,-50%) scale(1.4);filter:brightness(3)}
+            100%{transform:translate(-50%,-50%) scale(1)}
+        }
+
+        /* Character areas */
+        /* Force LTR on battle screen so positions are consistent */
+        #battle-screen { direction: ltr; }
+
+        .team-area {
+            position: absolute; top: 0; width: 50%; height: 100%;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            gap: 10px;
+        }
+        #boys-area { left: 0; }   /* Boys always on VISUAL LEFT */
+        #girls-area { right: 0; } /* Girls always on VISUAL RIGHT */
+
+        .face-wrapper {
+            position: relative;
+            transition: transform 0.4s cubic-bezier(0.175,0.885,0.32,1.275);
+        }
+        .face-wrapper.celebrate { animation: celebrateBounce 0.6s ease; }
+        .face-wrapper.hit { animation: hitShake 0.4s ease; }
+        @keyframes celebrateBounce {
+            0%{transform:scale(1)}
+            30%{transform:scale(1.25) rotate(-5deg)}
+            60%{transform:scale(1.15) rotate(5deg)}
+            100%{transform:scale(1)}
+        }
+        @keyframes hitShake {
+            0%,100%{transform:translateX(0)}
+            20%{transform:translateX(-15px)}
+            40%{transform:translateX(15px)}
+            60%{transform:translateX(-10px)}
+            80%{transform:translateX(10px)}
+        }
+
+        .team-name {
+            font-size: 32px; font-weight: 900; letter-spacing: 1px;
+        }
+        .boys-team { color: #00f2fe; text-shadow: 0 0 15px rgba(0,242,254,0.5); }
+        .girls-team { color: #ffcc00; text-shadow: 0 0 15px rgba(255,204,0,0.5); }
+
+        .team-score-big {
+            font-size: 48px; font-weight: 900; opacity: 0.9;
+        }
+
+        .support-hint {
+            font-size: 14px; color: rgba(255,255,255,0.6);
+            background: rgba(255,255,255,0.05);
+            padding: 8px 18px; border-radius: 20px;
+            border: 1px solid rgba(255,255,255,0.1);
+            max-width: 220px; text-align: center;
+        }
+
+        /* Event Feed */
+        #event-feed {
+            position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
+            width: 420px; max-height: 140px; overflow: hidden;
+            background: rgba(0,0,0,0.55); backdrop-filter: blur(12px);
+            border-radius: 16px; border: 1px solid rgba(255,255,255,0.08);
+            padding: 10px;
+        }
+        .event-item {
+            display: flex; align-items: center; gap: 10px;
+            padding: 5px 8px; font-size: 14px;
+            animation: slideUp 0.3s ease-out;
+            border-bottom: 1px solid rgba(255,255,255,0.04);
+        }
+        @keyframes slideUp { from{transform:translateY(20px);opacity:0} to{transform:translateY(0);opacity:1} }
+        .event-avatar { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; }
+
+        /* Floating points */
+        .float-pts {
+            position: fixed; font-weight: 900; font-size: 32px;
+            pointer-events: none; z-index: 100;
+            animation: floatPts 1.2s ease-out forwards;
+        }
+        @keyframes floatPts {
+            0%{transform:translateY(0) scale(0.5);opacity:1}
+            50%{transform:translateY(-60px) scale(1.2);opacity:1}
+            100%{transform:translateY(-120px) scale(0.8);opacity:0}
+        }
+
+        /* Flying shapes */
+        .fly-shape {
+            position: fixed; font-size: 28px; pointer-events: none; z-index: 99;
+            animation: flyShape 1.5s ease-out forwards;
+        }
+        @keyframes flyShape {
+            0%{transform:scale(0) rotate(0deg);opacity:1}
+            100%{transform:scale(1.5) rotate(var(--rot)) translate(var(--tx),var(--ty));opacity:0}
+        }
+
+        /* Super power overlay */
+        #super-overlay {
+            position: fixed; inset: 0; z-index: 150;
+            pointer-events: none; display: none;
+            align-items: center; justify-content: center;
+            flex-direction: column;
+        }
+        .super-bg { position: absolute; inset: 0; animation: flashBG 0.15s infinite; }
+        @keyframes flashBG { 0%,100%{background:rgba(255,255,255,0)} 50%{background:rgba(255,255,255,0.15)} }
+        .super-text {
+            font-size: 90px; font-weight: 900; position: relative; z-index: 1;
+            animation: superPop 0.5s cubic-bezier(0.175,0.885,0.32,1.275);
+        }
+        @keyframes superPop {
+            0%{transform:scale(0);opacity:0}
+            70%{transform:scale(1.3)}
+            100%{transform:scale(1);opacity:1}
+        }
+        .super-icon { font-size: 130px; position: relative; z-index: 1; animation: superFloat 0.8s ease-in-out infinite alternate; }
+        @keyframes superFloat { from{transform:translateY(0)} to{transform:translateY(-20px)} }
+
+        /* Winner screen */
+        #winner-screen {
+            position: fixed; inset: 0; z-index: 180;
+            background: rgba(0,0,0,0.92);
+            display: none; flex-direction: column;
+            align-items: center; justify-content: center; text-align: center;
+        }
+        .winner-crown { font-size: 70px; animation: crownFloat 1.5s ease-in-out infinite; margin-bottom: -10px; }
+        @keyframes crownFloat { 0%,100%{transform:translateY(0) rotate(-5deg)} 50%{transform:translateY(-12px) rotate(5deg)} }
+        .winner-title { font-size: 60px; font-weight: 900; margin: 10px 0; }
+        .winner-final { font-size: 22px; color: #ccc; margin-bottom: 20px; }
+        .btn-restart {
+            padding: 15px 50px; background: #ffcc00; color: white;
+            border: none; border-radius: 12px; font-size: 20px; font-weight: 700;
+            cursor: pointer; font-family: 'Cairo', sans-serif;
+        }
+        /* ━━━ EPIC CHAMPIONSHIP WINNER SCREEN ━━━ */
+        #winner-screen {
+            position: fixed; inset: 0; z-index: 180;
+            display: none; flex-direction: column;
+            align-items: center; justify-content: center; text-align: center;
+            overflow: hidden;
+            background: #060814;
+            font-family: 'Cairo', sans-serif;
+        }
+        
+        .ws-bg {
+            position: absolute; inset: 0;
+            background: radial-gradient(circle at center, rgba(10,12,32,0.85) 0%, #03040b 100%);
+            z-index: 0;
+        }
+
+        .ws-bg-winner {
+            position: absolute; inset: 0; z-index: 1;
+            opacity: 0;
+            transition: opacity 1s ease;
+        }
+
+        #winner-screen.boys-win .ws-bg-winner {
+            background: radial-gradient(circle at center, rgba(0,242,254,0.18) 0%, rgba(15,52,96,0.06) 50%, #03040b 100%);
+            opacity: 1;
+        }
+        #winner-screen.girls-win .ws-bg-winner {
+            background: radial-gradient(circle at center, rgba(255,204,0,0.18) 0%, rgba(92,0,48,0.06) 50%, #03040b 100%);
+            opacity: 1;
+        }
+
+        .ws-bg-beams {
+            position: absolute; inset: 0; z-index: 2; pointer-events: none;
+            overflow: hidden;
+        }
+
+        .ws-beam {
+            position: absolute; bottom: 0; width: 4px;
+            animation: beamRise 2s ease-in-out infinite alternate;
+            transform-origin: bottom;
+            filter: blur(1px);
+        }
+
+        @keyframes beamRise {
+            from { transform: scaleY(0.1); opacity: 0.1; }
+            to   { transform: scaleY(1.2); opacity: 0.7; }
+        }
+
+        /* Content Container */
+        .ws-content {
+            position: relative; z-index: 10;
+            width: 100%; max-width: 1200px;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            gap: 20px;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        /* Esports Title */
+        .ws-header {
+            animation: fadeInDown 0.8s ease-out;
+            margin-bottom: 10px;
+        }
+        @keyframes fadeInDown {
+            from { opacity: 0; transform: translateY(-30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .ws-title-glowing {
+            font-size: 46px; font-weight: 900;
+            background: linear-gradient(135deg, #ffd700, #ff8c00, #ffd700);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 35px rgba(255,215,0,0.55);
+            letter-spacing: 2px;
+        }
+        .ws-subtitle {
+            font-size: 18px; color: rgba(255,255,255,0.65);
+            letter-spacing: 1px; margin-top: 5px;
+        }
+
+        /* Main cards container */
+        .ws-cards-container {
+            display: flex; align-items: center; justify-content: center;
+            gap: 50px; width: 100%;
+            margin: 20px 0;
+            animation: fadeInUp 0.8s ease-out;
+        }
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* VS divider */
+        .ws-vs-glow {
+            font-size: 54px; font-weight: 900;
+            color: rgba(255,255,255,0.18);
+            text-shadow: 0 0 20px rgba(255,255,255,0.1);
+            font-style: italic;
+            animation: pulseVS 1.5s infinite alternate;
+        }
+        @keyframes pulseVS {
+            from { transform: scale(1); opacity: 0.2; }
+            to { transform: scale(1.15); opacity: 0.55; text-shadow: 0 0 30px rgba(255,255,255,0.3); }
+        }
+
+        /* Individual team cards */
+        .ws-team-card {
+            position: relative;
+            background: rgba(10,12,32,0.65);
+            backdrop-filter: blur(15px);
+            border: 2px solid rgba(255,255,255,0.08);
+            border-radius: 24px;
+            width: 320px;
+            padding: 35px 25px;
+            display: flex; flex-direction: column;
+            align-items: center;
+            box-sizing: border-box;
+            transition: all 0.5s cubic-bezier(0.175,0.885,0.32,1.275);
+            overflow: visible;
+        }
+
+        /* Glowing card background for winner */
+        .ws-card-glow-bg {
+            position: absolute; inset: -2px;
+            border-radius: 24px;
+            background: transparent;
+            z-index: -1;
+            transition: all 0.5s ease;
+        }
+
+        /* Crown animation & absolute position above head */
+        .ws-crown-holder {
+            position: absolute;
+            top: -42px; /* Snug fit resting perfectly on top of the character's head */
+            font-size: 55px; /* Perfect proportional sizing */
+            z-index: 100;
+            filter: drop-shadow(0 0 15px rgba(255,215,0,0.85));
+            display: none; /* Only show on winner */
+            animation: crownBounce 1.5s ease-in-out infinite alternate;
+        }
+
+        .ws-card-avatar {
+            width: 120px;
+            height: 180px; /* Perfectly matched to SVG 120x180 aspect ratio to prevent overflow/overlap */
+            margin-bottom: 5px;
+            position: relative;
+            transition: all 0.5s ease;
+        }
+
+        .ws-card-avatar svg {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        .ws-card-name {
+            font-size: 32px; font-weight: 900;
+            margin-bottom: 12px;
+            transition: all 0.5s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            flex-direction: row;
+        }
+
+        /* Esports Tournament Wins Badge next to the team name */
+        .ws-wins-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            background: rgba(255, 215, 0, 0.12);
+            border: 1px solid rgba(255, 215, 0, 0.35);
+            color: #ffd700;
+            font-size: 14px;
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-weight: 900;
+            box-shadow: 0 0 10px rgba(255, 215, 0, 0.15);
+            text-shadow: none;
+            direction: ltr; /* Keeps icon and number ordered neatly as Trophy + Number */
+        }
+
+        .ws-card-status-tag {
+            font-size: 16px; font-weight: 900;
+            padding: 6px 24px;
+            border-radius: 30px;
+            margin-bottom: 25px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+
+        .ws-card-score-box {
+            width: 100%;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 16px;
+            padding: 12px 10px;
+            box-sizing: border-box;
+            text-align: center;
+        }
+        .ws-card-score-title {
+            font-size: 13px; color: rgba(255,255,255,0.45);
+            margin-bottom: 4px;
+        }
+        .ws-card-score-val {
+            font-size: 36px; font-weight: 900;
+        }
+
+        /* ━━━ STATE: WINNER ━━━ */
+        .ws-team-card.winner {
+            transform: scale(1.08) translateY(-10px);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.6);
+            z-index: 15;
+            background: rgba(12,18,48,0.8);
+            border-color: rgba(255,215,0,0.3);
+        }
+
+        #ws-card-boys.winner {
+            border-color: #00f2fe;
+        }
+        #ws-card-boys.winner .ws-card-glow-bg {
+            background: linear-gradient(135deg, #00f2fe, #4facfe);
+            opacity: 0.15;
+            filter: blur(25px);
+        }
+        #ws-card-boys.winner .ws-card-name {
+            color: #00f2fe;
+            text-shadow: 0 0 20px rgba(0,242,254,0.4);
+        }
+        #ws-card-boys.winner .ws-card-score-val {
+            color: #00f2fe;
+            text-shadow: 0 0 15px rgba(0,242,254,0.3);
+        }
+        #ws-card-boys.winner .ws-card-status-tag {
+            background: linear-gradient(135deg, #00f2fe, #4facfe);
+            color: #03040b;
+        }
+
+        #ws-card-girls.winner {
+            border-color: #ffcc00;
+        }
+        #ws-card-girls.winner .ws-card-glow-bg {
+            background: linear-gradient(135deg, #ffcc00, #ffa500);
+            opacity: 0.15;
+            filter: blur(25px);
+        }
+        #ws-card-girls.winner .ws-card-name {
+            color: #ffcc00;
+            text-shadow: 0 0 20px rgba(255,204,0,0.4);
+        }
+        #ws-card-girls.winner .ws-card-score-val {
+            color: #ffcc00;
+            text-shadow: 0 0 15px rgba(255,204,0,0.3);
+        }
+        #ws-card-girls.winner .ws-card-status-tag {
+            background: linear-gradient(135deg, #ffcc00, #ffa500);
+            color: #03040b;
+        }
+
+        .ws-team-card.winner .ws-crown-holder {
+            display: block;
+        }
+        .ws-team-card.winner .ws-card-avatar {
+            animation: winnerSideFloat 1.2s ease-in-out infinite alternate;
+        }
+
+        /* ━━━ STATE: LOSER ━━━ */
+        .ws-team-card.loser {
+            transform: scale(0.9);
+            opacity: 0.45;
+            filter: grayscale(0.7);
+            z-index: 5;
+            background: rgba(10,10,15,0.4);
+            border-color: rgba(255,255,255,0.03);
+        }
+        .ws-team-card.loser .ws-card-name {
+            color: #888;
+        }
+        .ws-team-card.loser .ws-card-status-tag {
+            background: rgba(231,76,60,0.15);
+            color: #e74c3c;
+            border: 1px solid rgba(231,76,60,0.25);
+        }
+        .ws-team-card.loser .ws-card-score-val {
+            color: #aaa;
+        }
+        .ws-team-card.loser .ws-card-avatar {
+            animation: loserSideShake 0.12s ease-in-out infinite alternate;
+        }
+
+        /* Restart button styling */
+        .ws-restart-btn {
+            padding: 18px 60px;
+            font-size: 22px; font-weight: 900;
+            border: none; border-radius: 50px; cursor: pointer;
+            font-family: 'Cairo', sans-serif;
+            background: linear-gradient(135deg, #ffd700, #ff8c00);
+            color: #000;
+            box-shadow: 0 0 30px rgba(255,215,0,0.5);
+            animation: btnPulse 1s ease-in-out infinite alternate;
+            margin-top: 15px;
+        }
+        @keyframes btnPulse {
+            from { box-shadow: 0 0 20px rgba(255,215,0,0.4); transform: scale(1); }
+            to   { box-shadow: 0 0 50px rgba(255,215,0,0.8); transform: scale(1.04); }
+        }
+
+        /* Floating emoji rain */
+        .emoji-rain {
+            position: fixed; font-size: 32px; pointer-events: none; z-index: 95;
+            animation: emojiRain var(--dur,1.8s) cubic-bezier(0.25,0.46,0.45,0.94) forwards;
+        }
+        @keyframes emojiRain {
+            0%   { transform: translate(0,0) scale(0) rotate(0deg); opacity: 1; }
+            40%  { transform: translate(var(--tx1), var(--ty1)) scale(1.4) rotate(var(--rot1)); opacity: 1; }
+            100% { transform: translate(var(--tx2), var(--ty2)) scale(0.3) rotate(var(--rot2)); opacity: 0; }
+        }
+
+        /* Gift explosion (big gift animation) */
+        .gift-explosion {
+            position: fixed; pointer-events: none; z-index: 98;
+            animation: giftExplode var(--gdur,1.2s) ease-out forwards;
+        }
+        @keyframes giftExplode {
+            0%   { transform: translate(-50%,-50%) scale(0); opacity: 1; }
+            30%  { transform: translate(-50%,-50%) scale(2.5); opacity: 1; }
+            60%  { transform: translate(-50%,-50%) scale(1.8) rotate(15deg); opacity: 0.8; }
+            100% { transform: translate(-50%,-50%) scale(0.5) translateY(-80px); opacity: 0; }
+        }
+
+        /* Confetti canvas */
+        #confetti-canvas {
+            position: fixed; inset: 0; pointer-events: none; z-index: 90;
+        }
+
+        /* Debug panel */
+        #debug-panel {
+            position: fixed; bottom: 20px; right: 20px; z-index: 50;
+            background: rgba(10,10,20,0.9); border: 1px solid #ffcc00;
+            border-radius: 14px; padding: 16px;
+            display: flex; flex-direction: column; gap: 10px; width: 190px;
+            backdrop-filter: blur(10px);
+        }
+        #debug-panel h4 { font-size: 14px; color: #ffd700; }
+        .dbg-btn {
+            padding: 9px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);
+            background: rgba(255,255,255,0.05); color: white; cursor: pointer;
+            font-size: 13px; font-family: 'Cairo', sans-serif;
+            transition: 0.2s;
+        }
+        .dbg-btn:hover { background: rgba(255,255,255,0.12); }
+        .dbg-btn.active { background: #ffcc00; border-color: #ffcc00; }
+
+        /* Like/hearts animation for background */
+        .bg-heart {
+            position: fixed; font-size: 24px; pointer-events: none; z-index: 5;
+            animation: bgFloat 3s ease-out forwards;
+        }
+        @keyframes bgFloat {
+            0%{transform:translateY(0) scale(1);opacity:0.8}
+            100%{transform:translateY(-100vh) scale(0.3);opacity:0}
+        }
+        
+        /*  MOBILE RESPONSIVENESS  */
+        @media (max-width: 768px) {
+            .setup-box { width: 95%; padding: 20px; }
+            .setup-box h2 { font-size: 20px; margin-bottom: 15px; }
+            .setup-section input[type=text], .setup-section input[type=number], .setup-section select { padding: 8px; font-size: 14px; }
+            
+            #score-bar-wrap { width: 95%; top: 10px; }
+            .team-score-label { font-size: 16px; }
+            #score-bar { height: 18px; }
+            
+            #timer { font-size: 20px; padding: 5px 20px; top: 40px; }
+            
+            .team-name { font-size: 18px; }
+            .team-score-big { font-size: 28px; }
+            .support-hint { font-size: 10px; padding: 5px 10px; max-width: 140px; }
+            
+            #vs-logo { font-size: 32px; }
+            
+            .face-wrapper { transform: scale(0.6); }
+            
+            #event-feed { width: 90%; bottom: 10px; font-size: 12px; }
+            
+            .admin-ctrl-panel { transform: scale(0.7); transform-origin: top right; right: 5px; top: 5px; }
+            #debug-panel { transform: scale(0.7); transform-origin: bottom right; right: 5px; bottom: 5px; }
+            
+            .winner-title { font-size: 40px; }
+            .winner-crown { font-size: 50px; }
+        }
+    #boys-area { left: 0; }   /* Boys always on VISUAL LEFT */
+        #girls-area { right: 0; } /* Girls always on VISUAL RIGHT */
+
+        .face-wrapper {
+            position: relative;
+            transition: transform 0.4s cubic-bezier(0.175,0.885,0.32,1.275);
+        }
+        .face-wrapper.celebrate { animation: celebrateBounce 0.6s ease; }
+        .face-wrapper.hit { animation: hitShake 0.4s ease; }
+        @keyframes celebrateBounce {
+            0%{transform:scale(1)}
+            30%{transform:scale(1.25) rotate(-5deg)}
+            60%{transform:scale(1.15) rotate(5deg)}
+            100%{transform:scale(1)}
+        }
+        @keyframes hitShake {
+            0%,100%{transform:translateX(0)}
+            20%{transform:translateX(-15px)}
+            40%{transform:translateX(15px)}
+            60%{transform:translateX(-10px)}
+            80%{transform:translateX(10px)}
+        }
+
+        .team-name {
+            font-size: 32px; font-weight: 900; letter-spacing: 1px;
+        }
+        .boys-team { color: #00f2fe; text-shadow: 0 0 15px rgba(0,242,254,0.5); }
+        .girls-team { color: #ffcc00; text-shadow: 0 0 15px rgba(255,204,0,0.5); }
+
+        .team-score-big {
+            font-size: 48px; font-weight: 900; opacity: 0.9;
+        }
+
+        .support-hint {
+            font-size: 14px; color: rgba(255,255,255,0.6);
+            background: rgba(255,255,255,0.05);
+            padding: 8px 18px; border-radius: 20px;
+            border: 1px solid rgba(255,255,255,0.1);
+            max-width: 220px; text-align: center;
+        }
+
+        /* Event Feed */
+        #event-feed {
+            position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
+            width: 420px; max-height: 140px; overflow: hidden;
+            background: rgba(0,0,0,0.55); backdrop-filter: blur(12px);
+            border-radius: 16px; border: 1px solid rgba(255,255,255,0.08);
+            padding: 10px;
+        }
+        .event-item {
+            display: flex; align-items: center; gap: 10px;
+            padding: 5px 8px; font-size: 14px;
+            animation: slideUp 0.3s ease-out;
+            border-bottom: 1px solid rgba(255,255,255,0.04);
+        }
+        @keyframes slideUp { from{transform:translateY(20px);opacity:0} to{transform:translateY(0);opacity:1} }
+        .event-avatar { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; }
+
+        /* Floating points */
+        .float-pts {
+            position: fixed; font-weight: 900; font-size: 32px;
+            pointer-events: none; z-index: 100;
+            animation: floatPts 1.2s ease-out forwards;
+        }
+        @keyframes floatPts {
+            0%{transform:translateY(0) scale(0.5);opacity:1}
+            50%{transform:translateY(-60px) scale(1.2);opacity:1}
+            100%{transform:translateY(-120px) scale(0.8);opacity:0}
+        }
+
+        /* Flying shapes */
+        .fly-shape {
+            position: fixed; font-size: 28px; pointer-events: none; z-index: 99;
+            animation: flyShape 1.5s ease-out forwards;
+        }
+        @keyframes flyShape {
+            0%{transform:scale(0) rotate(0deg);opacity:1}
+            100%{transform:scale(1.5) rotate(var(--rot)) translate(var(--tx),var(--ty));opacity:0}
+        }
+
+        /* Super power overlay */
+        #super-overlay {
+            position: fixed; inset: 0; z-index: 150;
+            pointer-events: none; display: none;
+            align-items: center; justify-content: center;
+            flex-direction: column;
+        }
+        .super-bg { position: absolute; inset: 0; animation: flashBG 0.15s infinite; }
+        @keyframes flashBG { 0%,100%{background:rgba(255,255,255,0)} 50%{background:rgba(255,255,255,0.15)} }
+        .super-text {
+            font-size: 90px; font-weight: 900; position: relative; z-index: 1;
+            animation: superPop 0.5s cubic-bezier(0.175,0.885,0.32,1.275);
+        }
+        @keyframes superPop {
+            0%{transform:scale(0);opacity:0}
+            70%{transform:scale(1.3)}
+            100%{transform:scale(1);opacity:1}
+        }
+        .super-icon { font-size: 130px; position: relative; z-index: 1; animation: superFloat 0.8s ease-in-out infinite alternate; }
+        @keyframes superFloat { from{transform:translateY(0)} to{transform:translateY(-20px)} }
+
+        /* Winner screen */
+        #winner-screen {
+            position: fixed; inset: 0; z-index: 180;
+            background: rgba(0,0,0,0.92);
+            display: none; flex-direction: column;
+            align-items: center; justify-content: center; text-align: center;
+        }
+        .winner-crown { font-size: 70px; animation: crownFloat 1.5s ease-in-out infinite; margin-bottom: -10px; }
+        @keyframes crownFloat { 0%,100%{transform:translateY(0) rotate(-5deg)} 50%{transform:translateY(-12px) rotate(5deg)} }
+        .winner-title { font-size: 60px; font-weight: 900; margin: 10px 0; }
+        .winner-final { font-size: 22px; color: #ccc; margin-bottom: 20px; }
+        .btn-restart {
+            padding: 15px 50px; background: #ffcc00; color: white;
+            border: none; border-radius: 12px; font-size: 20px; font-weight: 700;
+            cursor: pointer; font-family: 'Cairo', sans-serif;
+        }
+        /* Characters on winner screen */
+        .end-scene { display: flex; align-items: flex-end; justify-content: center; gap: 60px; margin: 15px 0 25px; }
+        .end-char { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+        .end-char-name { font-size: 14px; font-weight: 700; color: #aaa; }
+        .end-char-img { width: 120px; height: 120px; object-fit: contain; }
+        .winner-char .end-char-img { animation: winnerBounce 0.6s ease infinite alternate; }
+        @keyframes winnerBounce { from{transform:translateY(0) scale(1)} to{transform:translateY(-18px) scale(1.06)} }
+        .loser-char .end-char-img { animation: loserShake 0.15s ease infinite alternate; opacity: 0.7; filter: grayscale(0.5); }
+        @keyframes loserShake { from{transform:rotate(-4deg) translateY(2px)} to{transform:rotate(4deg) translateY(0)} }
+        .winner-char-crown { font-size: 36px; animation: crownBounce 0.6s ease infinite alternate; }
+        @keyframes crownBounce { from{transform:translateY(0)} to{transform:translateY(-10px)} }
+        .loser-x { font-size: 28px; color: #e74c3c; }
+
+        /* Confetti canvas */
+        #confetti-canvas {
+            position: fixed; inset: 0; pointer-events: none; z-index: 90;
+        }
+
+        /* Debug panel */
+        #debug-panel {
+            position: fixed; bottom: 20px; right: 20px; z-index: 50;
+            background: rgba(10,10,20,0.9); border: 1px solid #ffcc00;
+            border-radius: 14px; padding: 16px;
+            display: flex; flex-direction: column; gap: 10px; width: 190px;
+            backdrop-filter: blur(10px);
+        }
+        #debug-panel h4 { font-size: 14px; color: #ffd700; }
+        .dbg-btn {
+            padding: 9px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);
+            background: rgba(255,255,255,0.05); color: white; cursor: pointer;
+            font-size: 13px; font-family: 'Cairo', sans-serif;
+            transition: 0.2s;
+        }
+        .dbg-btn:hover { background: rgba(255,255,255,0.12); }
+        .dbg-btn.active { background: #ffcc00; border-color: #ffcc00; }
+
+        /* Like/hearts animation for background */
+        .bg-heart {
+            position: fixed; font-size: 24px; pointer-events: none; z-index: 5;
+            animation: bgFloat 3s ease-out forwards;
+        }
+        @keyframes bgFloat {
+            0%{transform:translateY(0) scale(1);opacity:0.8}
+            100%{transform:translateY(-100vh) scale(0.3);opacity:0}
+        }
+        
+
+</style>
+</head>
+<body>
+
+<!--  SETUP PANEL  -->
+<div id="setup-panel">
+    <div class="setup-box">
+        <h2>تحدي الفرق</h2>
+
+        <div class="setup-section">
+            <div class="section-title">اختيار الفرق</div>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+                <div>
+                    <label>الفريق الأول (يمين)</label>
+                    <select id="team1-select">
+                        <option value="الهلال">الهلال</option>
+                        <option value="النصر">النصر</option>
+                        <option value="برشلونة">برشلونة</option>
+                        <option value="ريال مدريد">ريال مدريد</option>
+                        <option value="الاتحاد">الاتحاد</option>
+                        <option value="الأهلي">الأهلي</option>
+                        <option value="الشباب">الشباب</option>
+                    </select>
+                </div>
+                <div>
+                    <label>الفريق الثاني (يسار)</label>
+                    <select id="team2-select">
+                        <option value="النصر">النصر</option>
+                        <option value="الهلال">الهلال</option>
+                        <option value="برشلونة">برشلونة</option>
+                        <option value="ريال مدريد">ريال مدريد</option>
+                        <option value="الاتحاد">الاتحاد</option>
+                        <option value="الأهلي">الأهلي</option>
+                        <option value="الشباب">الشباب</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div class="setup-section">
+            <div class="section-title">إعدادات الاتصال</div>
+            <label>اسم الحساب (@username)</label>
+            <input type="text" id="username-input" placeholder="مثال: aaa_streamer">
+        </div>
+
+        <div class="setup-section">
+            <div class="section-title">اختيار هدايا الفرق</div>
+            <p style="font-size:12px;color:#888;margin-bottom:10px">اختر الهدية لكل فريق بالضغط على الزر.</p>
+            <div id="gift-picker-container"></div>
+        </div>
+
+        <div class="setup-section">
+            <div class="section-title">إعدادات اللعبة</div>
+            <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px;">
+                <div>
+                    <label>المدة (دقائق)</label>
+                    <input type="number" id="duration-input" value="5" min="1" max="60">
+                </div>
+                <div>
+                    <label>النقاط</label>
+                    <input type="number" id="like-pts-input" value="10" min="0">
+                </div>
+                <div>
+                    <label> </label>
+                    <input type="number" id="share-pts-input" value="10" min="0">
+                </div>
+                <div>
+                    <label> </label>
+                    <input type="number" id="follow-pts-input" value="10" min="0">
+                </div>
+                <div>
+                    <label> </label>
+                    <select id="follow-team-select">
+                        <option value="girls"></option>
+                        <option value="boys"></option>
+                        <option value="both">للفريقين</option>
+                    </select>
+                </div>
+                <div>
+                    <label>إضافة يدوية</label>
+                    <select id="default-sel-select">
+                        <option value="default">تفعيل</option>
+                        <option value="none">تعطيل</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <button class="btn-primary" id="connect-btn">بدء التحدي</button>
+        <button class="btn-secondary" id="preview-btn">معاينة</button>
+        <p id="status-msg"></p>
+    </div>
+</div>
+
+<!--  BATTLE SCREEN  -->
+<div id="battle-screen">
+    <canvas id="confetti-canvas"></canvas>
+
+    <!-- Backgrounds -->
+    <div class="battle-bg">
+        <div class="bg-boys" style="background: linear-gradient(135deg, #0a1628 0%, #0033aa 50%, #1a1a2e 100%);"></div>
+        <div class="bg-girls" style="background: linear-gradient(225deg, #332200 0%, #aa8800 50%, #1a1a2e 100%);"></div>
+    </div>
+
+    <!-- Score Bar -->
+    <div id="score-bar-wrap">
+        <span class="team-score-label boys-score-label" id="boys-score-label">0</span>
+        <div id="score-bar">
+            <div id="boys-bar"></div>
+            <div id="girls-bar"></div>
+        </div>
+        <span class="team-score-label girls-score-label" id="girls-score-label">0</span>
+    </div>
+
+    <!-- Timer (click to edit) -->
+    <div id="timer" onclick="toggleTimerEdit()" title="تعديل الوقت">05:00</div>
+    <div id="timer-edit-panel">
+        <span style="color:#00f2fe;font-size:14px">الوقت:</span>
+        <input type="number" id="timer-edit-input" value="5" min="1" max="60">
+        <button id="timer-edit-confirm" onclick="applyTimerEdit()">تأكيد</button>
+    </div>
+
+    <!-- VS -->
+    <div id="vs-logo">VS</div>
+
+    <!-- Boys Area (LEFT) -->
+    <div class="team-area" id="boys-area">
+        <div class="face-wrapper" id="boys-face-wrapper">
+            <div id="boys-face-container"></div>
+        </div>
+        <div class="team-header boys-header">
+            <div class="team-name boys-team" id="boys-name-display">الهلال</div>
+            <div class="team-score-big boys-team" id="boys-pts">0</div>
+            <div style="background:rgba(0,0,0,0.6); padding:4px 10px; border-radius:10px; margin-top:5px; border:1px solid #00f2fe; display:flex; align-items:center; gap:5px;">
+                <span style="font-size:16px;">🏆</span>
+                <span style="color:#00f2fe; font-weight:bold; font-size:14px;">الانتصارات: <span id="boys-win-count">0</span></span>
+            </div>
+        </div>
+        <div class="team-info-hint">    </div>
+        <div class="hp-bar-wrap"><div class="hp-bar boys" id="boys-hp-bar" style="width:100%"></div></div>
+        <div class="support-hint" id="boys-hint"> :  </div>
+        
+        <div id="boys-king" style="display:none; text-align:center; background:rgba(0,0,0,0.5); border:1px solid #00f2fe; border-radius:10px; padding:5px; margin-top:10px;">
+            <div style="font-size:12px; color:#ffd700; font-weight:bold;">الداعم الأقوى</div>
+            <img id="boys-king-img" src="" style="width:40px;height:40px;border-radius:50%;margin:5px 0;">
+            <div id="boys-king-name" style="font-size:12px; color:#fff;"></div>
+        </div>
+    </div>
+
+    <!-- Girls Area (RIGHT) -->
+    <div class="team-area" id="girls-area">
+        <div class="face-wrapper" id="girls-face-wrapper">
+            <div id="girls-face-container"></div>
+        </div>
+        <div class="team-header girls-header">
+            <div class="team-name girls-team" id="girls-name-display">النصر</div>
+            <div class="team-score-big girls-team" id="girls-pts">0</div>
+            <div style="background:rgba(0,0,0,0.6); padding:4px 10px; border-radius:10px; margin-top:5px; border:1px solid #ffcc00; display:flex; align-items:center; gap:5px;">
+                <span style="font-size:16px;">🏆</span>
+                <span style="color:#ffcc00; font-weight:bold; font-size:14px;">الانتصارات: <span id="girls-win-count">0</span></span>
+            </div>
+        </div>
+        <div class="team-info-hint">    </div>
+        <div class="hp-bar-wrap"><div class="hp-bar girls" id="girls-hp-bar" style="width:100%"></div></div>
+        <div class="support-hint" id="girls-hint"> :   </div>
+        
+        <div id="girls-queen" style="display:none; text-align:center; background:rgba(0,0,0,0.5); border:1px solid #ffcc00; border-radius:10px; padding:5px; margin-top:10px;">
+            <div style="font-size:12px; color:#ffd700; font-weight:bold;">الداعم الأقوى</div>
+            <img id="girls-queen-img" src="" style="width:40px;height:40px;border-radius:50%;margin:5px 0;">
+            <div id="girls-queen-name" style="font-size:12px; color:#fff;"></div>
+        </div>
+    </div>
+
+    <!-- Event Feed -->
+    <div id="event-feed"></div>
+
+    <!-- Super Power Overlay -->
+    <div id="super-overlay">
+        <div class="super-bg"></div>
+        <div class="super-text" id="super-text"> !</div>
+        <div class="super-icon" id="super-icon"></div>
+    </div>
+
+    <!-- Winner Screen — EPIC -->
+    <div id="winner-screen">
+        <!-- Animated BG -->
+        <div class="ws-bg"></div>
+        <div class="ws-bg-winner" id="ws-bg-winner"></div>
+        <div class="ws-bg-beams" id="ws-beams"></div>
+
+        <!-- Content -->
+        <div class="ws-content">
+            <!-- Header -->
+            <div class="ws-header">
+                <div class="ws-title-glowing">🏆 مـلـك الـتـحـدي 🏆</div>
+                <div class="ws-subtitle">نهائي معركة الحماس والإثارة</div>
+            </div>
+
+            <!-- Main Championship Cards Container -->
+            <div class="ws-cards-container">
+                <!-- Boys Team Card -->
+                <div class="ws-team-card" id="ws-card-boys">
+                    <div class="ws-card-glow-bg"></div>
+                    <div class="ws-crown-holder" id="ws-crown-boys">👑</div>
+                    <div class="ws-card-avatar" id="ws-face-boys" style="width:140px;height:140px"></div>
+                    <div class="ws-card-name" id="ws-name-boys">الهلال</div>
+                    <div class="ws-card-status-tag" id="ws-tag-boys">فائز</div>
+                    <div class="ws-card-score-box">
+                        <div class="ws-card-score-title">النقاط الإجمالية</div>
+                        <div class="ws-card-score-val" id="ws-pts-boys">0</div>
+                    </div>
+                </div>
+
+                <!-- VS Divider with dynamic glow -->
+                <div class="ws-vs-glow">VS</div>
+
+                <!-- Girls Team Card -->
+                <div class="ws-team-card" id="ws-card-girls">
+                    <div class="ws-card-glow-bg"></div>
+                    <div class="ws-crown-holder" id="ws-crown-girls">👑</div>
+                    <div class="ws-card-avatar" id="ws-face-girls" style="width:140px;height:140px"></div>
+                    <div class="ws-card-name" id="ws-name-girls">النصر</div>
+                    <div class="ws-card-status-tag" id="ws-tag-girls">خسر</div>
+                    <div class="ws-card-score-box">
+                        <div class="ws-card-score-title">النقاط الإجمالية</div>
+                        <div class="ws-card-score-val" id="ws-pts-girls">0</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="ws-actions">
+                <button class="ws-restart-btn" onclick="startNewRound()">🔄 جولة جديدة</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Debug Panel -->
+    <div id="debug-panel">
+        <h4>أدوات التجربة</h4>
+        <button class="dbg-btn" id="bot-btn" onclick="toggleBotMode()">تشغيل البوت</button>
+        <button class="dbg-btn" onclick="simEvent('like','boys')">إعجاب فريق 1</button>
+        <button class="dbg-btn" onclick="simEvent('gift','boys')">هدية فريق 1</button>
+        <button class="dbg-btn" onclick="simEvent('gift','girls')">هدية فريق 2</button>
+        <button class="dbg-btn" onclick="simEvent('super','boys')">خارق فريق 1</button>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    GiftPicker.render('gift-picker-container');
+    // Default: TikTok sign, Donut, Heart for Hilal (Boys) | Rose, Cat Witch, Cap for Nasr (Girls)
+    const defaultSel = document.getElementById('default-sel-select');
+    if (!defaultSel || defaultSel.value === 'default') {
+        GiftPicker.assign('tiktok_sign', 'boys');
+        GiftPicker.assign('donut', 'boys');
+        GiftPicker.assign('heart', 'boys');
+        GiftPicker.assign('rose', 'girls');
+        GiftPicker.assign('cat_witch', 'girls');
+        GiftPicker.assign('cap', 'girls');
+    }
+
+    const updateDynamicLabels = () => {
+        const t1 = document.getElementById('team1-select').value;
+        const t2 = document.getElementById('team2-select').value;
+        
+        const likeLabel = document.querySelector('#like-pts-input').previousElementSibling;
+        if (likeLabel) likeLabel.textContent = `نقاط التكبيس (${t1})`;
+        
+        const shareLabel = document.querySelector('#share-pts-input').previousElementSibling;
+        if (shareLabel) shareLabel.textContent = `نقاط الشير (${t2})`;
+        
+        const followTeamLabel = document.querySelector('#follow-team-select').previousElementSibling;
+        if (followTeamLabel) followTeamLabel.textContent = `فريق المتابعة`;
+
+        const followPtsLabel = document.querySelector('#follow-pts-input').previousElementSibling;
+        if (followPtsLabel) followPtsLabel.textContent = `نقاط المتابعة`;
+        
+        const boysOpt = document.querySelector('#follow-team-select option[value="boys"]');
+        if (boysOpt) boysOpt.textContent = `فريق ${t1}`;
+        
+        const girlsOpt = document.querySelector('#follow-team-select option[value="girls"]');
+        if (girlsOpt) girlsOpt.textContent = `فريق ${t2}`;
+    };
+
+    document.getElementById('team1-select').addEventListener('change', updateDynamicLabels);
+    document.getElementById('team2-select').addEventListener('change', updateDynamicLabels);
+    updateDynamicLabels();
+});
+</script>
+<script src="teams.js"></script>
+<script src="game.js"></script>
+
+<!-- Admin Control Panel (Floating) -->
+<div class="admin-ctrl-panel">
+    <div class="admin-ctrl-title">لوحة التحكم</div>
+    
+    <div class="admin-row">
+        <span class="admin-label">نقاط (Score)</span>
+        <button class="admin-btn btn-boys" onclick="adminAdjust('boys','score',500)">+500</button>
+        <button class="admin-btn" onclick="adminAdjust('boys','score',-500)">-500</button>
+    </div>
+    <div class="admin-row">
+        <span class="admin-label">صحة (HP)</span>
+        <button class="admin-btn btn-boys" onclick="adminAdjust('boys','hp',20)">+20</button>
+        <button class="admin-btn" onclick="adminAdjust('boys','hp',-20)">-20</button>
+    </div>
+
+    <hr style="border:0;border-top:1px solid #333">
+
+    <div class="admin-row">
+        <span class="admin-label">نقاط (Score)</span>
+        <button class="admin-btn btn-girls" onclick="adminAdjust('girls','score',500)">+500</button>
+        <button class="admin-btn" onclick="adminAdjust('girls','score',-500)">-500</button>
+    </div>
+    <div class="admin-row">
+        <span class="admin-label">صحة (HP)</span>
+        <button class="admin-btn btn-girls" onclick="adminAdjust('girls','hp',20)">+20</button>
+        <button class="admin-btn" onclick="adminAdjust('girls','hp',-20)">-20</button>
+    </div>
+</div>
+
+    <!-- Instructions Overlay -->
+    <div id="start-instruct">
+        <h2 style="color:#ffd700;margin-bottom:10px">طريقة اللعب</h2>
+        <div class="instruct-row">
+            <span class="instruct-btn inst-boys">الهلال</span>
+            <span>أرسل الهدايا لفريقك</span>
+            <span style="color:#00f2fe"> </span>
+        </div>
+        <div class="instruct-row">
+            <span class="instruct-btn inst-girls">النصر</span>
+            <span></span>
+            <span style="color:#ffcc00"> </span>
+        </div>
+        <p style="font-size:14px;color:#aaa;margin-top:10px">ادعم فريقك الآن!</p>
+    </div>
+
+
+
+
+<style>
+  /* Custom Cursor for Match */
+  * { cursor: none !important; }
+  .match-cursor {
+    width: 20px; height: 20px; border: 2px solid white; border-radius: 50%;
+    position: fixed; pointer-events: none; z-index: 99999;
+    transform: translate(-50%, -50%); transition: transform 0.1s;
+    background: radial-gradient(circle, #ffcc00 0%, transparent 80%);
+    box-shadow: 0 0 10px #ffcc00, 0 0 20px #0055ff;
+  }
+  .match-cursor-dot {
+    width: 6px; height: 6px; background: #0055ff; border-radius: 50%;
+    position: fixed; pointer-events: none; z-index: 100000;
+    transform: translate(-50%, -50%);
+  }
+</style>
+<div class="match-cursor" id="m-cursor"></div>
+<div class="match-cursor-dot" id="m-cursor-dot"></div>
+<script>
+  document.addEventListener('mousemove', (e) => {
+    document.getElementById('m-cursor').style.left = e.clientX + 'px';
+    document.getElementById('m-cursor').style.top = e.clientY + 'px';
+    document.getElementById('m-cursor-dot').style.left = e.clientX + 'px';
+    document.getElementById('m-cursor-dot').style.top = e.clientY + 'px';
+  });
+  document.addEventListener('mousedown', () => {
+    document.getElementById('m-cursor').style.transform = 'translate(-50%, -50%) scale(0.8)';
+  });
+  document.addEventListener('mouseup', () => {
+    document.getElementById('m-cursor').style.transform = 'translate(-50%, -50%) scale(1)';
+  });
+</script>
+
+</body>
+</html>
+

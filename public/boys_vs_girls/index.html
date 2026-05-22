@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>   - </title>
+    <link rel="stylesheet" href="style.css">
+    <script src="/socket.io/socket.io.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap');
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { margin: 0; overflow: hidden; background: #0a0a1a; font-family: 'Cairo', sans-serif; }
+        canvas { display: block; position: absolute; top: 0; left: 0; }
+        #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10; pointer-events: none; }
+
+        /*  SETUP  */
+        #setup-panel {
+            pointer-events: auto;
+            background: linear-gradient(135deg,rgba(10,10,25,.97),rgba(25,8,15,.97));
+            padding: 30px 28px; border-radius: 18px;
+            border: 2px solid #e94560; max-width: 420px;
+            margin: 35px auto; text-align: center; color: white;
+            box-shadow: 0 0 40px rgba(233,69,96,.5);
+        }
+        #setup-panel h2 { font-size: 24px; font-weight: 900; margin-bottom: 6px;
+            background: linear-gradient(90deg,#ff4b2b,#ffd700);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        #setup-panel p { font-size: 12px; color: #aaa; margin-bottom: 16px; line-height: 1.6; }
+        #setup-panel input { width:100%; padding:10px; margin-bottom:10px; border-radius:8px; border:1px solid #444; background:rgba(255,255,255,.08); color:white; outline:none; }
+        #setup-panel input:focus { border-color:#e94560; }
+        #setup-panel button { width:100%; padding:12px; margin-bottom:8px; border-radius:10px; border:none; font-weight:700; font-size:15px; cursor:pointer; color:white; transition:transform .15s; }
+        #setup-panel button:hover { transform:translateY(-2px); }
+        #connect-btn { background:linear-gradient(135deg,#e94560,#c0392b); }
+        #test-mode-btn { background:linear-gradient(135deg,#2c3e50,#34495e); border:1px solid #555; }
+        #settings-open-btn { background:linear-gradient(135deg,#6c3483,#8e44ad); }
+
+        /*  HP BAR  */
+        #score-board { display:none; position:absolute; top:12px; left:50%; transform:translateX(-50%); width:88%; max-width:750px; pointer-events:none; }
+        .score-row { display:flex; align-items:center; gap:8px; }
+        .team-label { font-size:13px; font-weight:700; white-space:nowrap; min-width:80px; }
+        #red-label { color:#ff4b2b; text-align:right; }
+        #blue-label { color:#00aaff; text-align:left; }
+        .hp-bar-bg { flex:1; height:20px; background:rgba(255,255,255,.1); border-radius:10px; overflow:hidden; border:1px solid rgba(255,255,255,.2); }
+        #red-hp-bar { height:100%; background:linear-gradient(90deg,#c0392b,#ff4b2b); border-radius:10px; transition:width .3s; }
+        #blue-hp-bar { height:100%; background:linear-gradient(90deg,#0066cc,#00aaff); border-radius:10px; transition:width .3s; }
+        #vs-badge { font-size:20px; font-weight:900; color:#ffd700; text-shadow:0 0 20px #ffd700; padding:0 8px; }
+        .hp-nums { display:flex; justify-content:space-between; margin-top:3px; }
+        .hp-nums span { font-size:12px; font-weight:700; }
+        #red-hp-num { color:#ff4b2b; }
+        #blue-hp-num { color:#00aaff; }
+
+        /*  ADMIN PANEL (collapsible, top-center-right, won't cover castles)  */
+        #admin-toggle-btn {
+            display:none; pointer-events:auto; position:absolute; top:65px; right:12px;
+            background:linear-gradient(135deg,#ffd700,#e67e00); color:#000;
+            border:none; border-radius:8px; padding:7px 12px;
+            font-weight:900; font-size:13px; cursor:pointer; z-index:30;
+        }
+        #admin-panel {
+            display:none; pointer-events:auto; position:absolute; top:100px; right:12px;
+            background:linear-gradient(135deg,rgba(10,10,25,.97),rgba(20,5,10,.97));
+            border:2px solid #ffd700; border-radius:14px; padding:12px;
+            color:white; width:180px; box-shadow:0 0 25px rgba(255,215,0,.4); z-index:20;
+            max-height: calc(100vh - 130px); overflow-y:auto;
+        }
+        #admin-panel h4 { color:#ffd700; text-align:center; font-size:12px; margin-bottom:10px; letter-spacing:1px; }
+        .admin-team-label { font-size:10px; font-weight:700; text-align:center; margin-bottom:5px; }
+        .admin-btn { width:100%; padding:6px 4px; margin-bottom:5px; border-radius:6px; border:none; font-weight:700; font-size:11px; cursor:pointer; color:white; transition:transform .1s; }
+        .admin-btn:hover { transform:scale(1.04); }
+        .red-atk { background:linear-gradient(90deg,#8b0000,#c0392b); }
+        .blue-atk { background:linear-gradient(90deg,#003080,#0066cc); }
+        .hr-sep { border:none; border-top:1px solid rgba(255,255,255,.15); margin:7px 0; }
+
+        /*  EVENT FEED  */
+        #event-feed { display:none; position:absolute; left:12px; top:65px; width:185px; pointer-events:none; z-index:5; }
+        .feed-item { background:rgba(0,0,0,.75); border-radius:7px; padding:4px 9px; margin-bottom:4px; font-size:11px; color:white; border-left:3px solid #ffd700; animation:feedIn .3s ease; }
+        @keyframes feedIn { from{opacity:0;transform:translateX(-15px)} to{opacity:1;transform:none} }
+
+        /*  INSTRUCTIONS  */
+        #instructions { display:none; position:absolute; bottom:12px; left:50%; transform:translateX(-50%); background:rgba(0,0,0,.75); padding:7px 18px; border-radius:25px; border:1px solid rgba(255,215,0,.35); color:#ddd; font-size:11px; backdrop-filter:blur(5px); pointer-events:none; white-space:nowrap; z-index:5; }
+
+        /*  SETTINGS MODAL  */
+        #settings-modal {
+            display:none; pointer-events:auto; position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
+            background:linear-gradient(135deg,rgba(10,10,28,.98),rgba(20,5,15,.98));
+            border:2px solid #8e44ad; border-radius:18px; padding:25px;
+            color:white; width:480px; max-width:95vw; max-height:85vh; overflow-y:auto;
+            box-shadow:0 0 50px rgba(142,68,173,.5); z-index:50;
+        }
+        #settings-modal h3 { color:#8e44ad; text-align:center; font-size:18px; margin-bottom:18px; }
+        .setting-row { display:flex; align-items:center; gap:10px; margin-bottom:12px; }
+        .setting-row label { flex:1; font-size:13px; color:#ccc; }
+        .setting-row select { background:#1a1a2e; color:white; border:1px solid #444; padding:6px 10px; border-radius:7px; font-size:13px; flex:1; }
+        .setting-section-title { color:#ffd700; font-size:13px; font-weight:700; margin:15px 0 8px; border-bottom:1px solid rgba(255,215,0,.3); padding-bottom:5px; }
+        #close-settings-btn { width:100%; padding:10px; background:linear-gradient(135deg,#8e44ad,#6c3483); border:none; border-radius:8px; color:white; font-weight:700; font-size:14px; cursor:pointer; margin-top:15px; }
+
+        /*  WINNER / ROUND END  */
+        #winner-screen {
+            display:none; position:absolute; top:0; left:0; width:100%; height:100%;
+            background:rgba(0,0,0,.93); z-index:200;
+            flex-direction:column; justify-content:center; align-items:center;
+            pointer-events:auto; backdrop-filter:blur(8px);
+        }
+        #winner-crown { font-size:70px; animation:bounce .8s ease infinite alternate; }
+        @keyframes bounce { from{transform:translateY(0)} to{transform:translateY(-12px)} }
+        #winner-title { font-size:46px; font-weight:900; text-shadow:0 0 40px currentColor; margin:10px 0 20px; }
+        #round-badge { font-size:16px; color:#ffd700; margin-bottom:15px; }
+        #supporters-grid { display:flex; flex-wrap:wrap; justify-content:center; gap:10px; max-width:700px; margin-bottom:25px; max-height:220px; overflow-y:auto; padding:0 10px; }
+        .supporter-card { display:flex; align-items:center; gap:8px; background:rgba(255,255,255,.1); border-radius:10px; padding:8px 14px; border:1px solid rgba(255,255,255,.2); }
+        .supporter-card img { width:36px; height:36px; border-radius:50%; }
+        .supporter-card .sup-name { font-size:13px; font-weight:700; }
+        .supporter-card .sup-score { font-size:11px; color:#ffd700; }
+        #next-round-btn { padding:14px 45px; font-size:18px; font-weight:700; background:linear-gradient(135deg,#e94560,#c0392b); color:white; border:none; border-radius:12px; cursor:pointer; box-shadow:0 5px 25px rgba(233,69,96,.5); transition:transform .2s; margin-right:10px; }
+        #next-round-btn:hover { transform:scale(1.05); }
+        #end-game-btn { padding:14px 35px; font-size:16px; font-weight:700; background:linear-gradient(135deg,#333,#555); color:white; border:none; border-radius:12px; cursor:pointer; }
+
+        @media(max-width:768px){
+            #admin-panel { transform:scale(.8); transform-origin:top right; }
+            #winner-title { font-size:28px; }
+            #settings-modal { padding:15px; }
+        }
+    </style>
+<link rel="stylesheet" href="/cursor.css">
+<script src="/cursor.js"></script>
+    <link rel="stylesheet" href="/alerts.css">
+</head>
+<body>
+<canvas id="game-canvas"></canvas>
+<div id="ui-layer">
+
+    <!-- SETUP -->
+    <div id="setup-panel">
+        <h2>حرب القلعة</h2>
+        <p>ادعم <b style="color:#ff4b2b">القلعة الحمراء</b> أو <b style="color:#00aaff">القلعة الزرقاء</b> !</p>
+        <input type="text" id="username-input" placeholder="اسم المستخدم (مثال: tiktok)">
+        <input type="password" id="session-input" placeholder="SessionId (اختياري)">
+        <button id="connect-btn">بدء اللعب</button>
+        <button id="test-mode-btn">معاينة</button>
+        <button id="settings-open-btn">الإعدادات</button>
+        <div id="status-msg" style="margin-top:8px;color:#ffd700;font-weight:700;font-size:13px;"></div>
+    </div>
+
+    <!-- HP BAR -->
+    <div id="score-board">
+        <div class="score-row">
+            <div class="team-label" id="red-label">القلعة الحمراء</div>
+            <div class="hp-bar-bg"><div id="red-hp-bar" style="width:100%"></div></div>
+            <div id="vs-badge"></div>
+            <div class="hp-bar-bg"><div id="blue-hp-bar" style="width:100%"></div></div>
+            <div class="team-label" id="blue-label">القلعة الزرقاء</div>
+        </div>
+        <div class="hp-nums">
+            <span id="red-hp-num">10,000 HP</span>
+            <span style="color:#aaa;font-size:10px;">بلا<span id="round-num">1</span></span>
+            <span id="blue-hp-num">10,000 HP</span>
+        </div>
+    </div>
+
+    <!-- ADMIN TOGGLE -->
+    <button id="admin-toggle-btn">التحكم</button>
+
+    <!-- ADMIN PANEL -->
+    <div id="admin-panel">
+        <h4>لوحة التحكم</h4>
+        <button class="admin-btn" style="background:linear-gradient(90deg,#ff4b2b,#8b0000);" id="test-like-btn">تجربة تكبيس (أحمر)</button>
+        <button class="admin-btn" style="background:linear-gradient(90deg,#00aaff,#003080);" id="test-share-btn">تجربة شير (أزرق)</button>
+        <hr class="hr-sep">
+        <div class="admin-team-label" style="color:#ff4b2b;">القلعة الحمراء</div>
+        <button class="admin-btn red-atk" data-team="red" data-type="arrow">سهم</button>
+        <button class="admin-btn red-atk" data-team="red" data-type="fireball">كرة نار</button>
+        <button class="admin-btn red-atk" data-team="red" data-type="meteor">نيزك</button>
+        <button class="admin-btn red-atk" data-team="red" data-type="nuke">نووي</button>
+        <hr class="hr-sep">
+        <div class="admin-team-label" style="color:#00aaff;">القلعة الزرقاء</div>
+        <button class="admin-btn blue-atk" data-team="blue" data-type="arrow">سهم</button>
+        <button class="admin-btn blue-atk" data-team="blue" data-type="fireball">كرة نار</button>
+        <button class="admin-btn blue-atk" data-team="blue" data-type="meteor">نيزك</button>
+        <button class="admin-btn blue-atk" data-team="blue" data-type="nuke">نووي</button>
+        <hr class="hr-sep">
+        <button class="admin-btn" style="background:linear-gradient(90deg,#6c3483,#8e44ad);" id="admin-auto-btn">هجوم تلقائي</button>
+        <button class="admin-btn" style="background:#333;border:1px solid #555;" id="admin-reset-btn">إعادة ضبط</button>
+    </div>
+
+    <!-- EVENT FEED -->
+    <div id="event-feed"></div>
+
+    <!-- INSTRUCTIONS -->
+    <div id="instructions">
+          العب مع <b style="color:#ff4b2b">الأحمر</b> أو <b style="color:#00aaff">الأزرق</b> &nbsp;|&nbsp; أحمر = تكبيس &nbsp;|&nbsp; أزرق = شير
+    </div>
+
+    <!-- SETTINGS MODAL -->
+    <div id="settings-modal">
+        <h3>الإعدادات</h3>
+
+        <div class="setting-section-title">إعدادات القلعة الزرقاء</div>
+        <div class="setting-row"><label>تكبيس (Like)</label><select id="red-like-action"><option value="none">بلا</option><option value="arrow">بلا</option><option value="fireball">كرة نار</option></select></div>
+        <div class="setting-row"><label>متابعة (Follow)</label><select id="red-follow-action"><option value="arrow" selected>بلا</option><option value="none">بلا</option><option value="fireball">كرة نار</option></select></div>
+        <div class="setting-row"><label>شير (Share)</label><select id="red-share-action"><option value="fireball" selected>كرة نار</option><option value="none">بلا</option><option value="arrow">بلا</option><option value="meteor">بلا</option></select></div>
+        <div class="setting-row"><label>وردة (Rose)</label><select id="red-rose-action"><option value="fireball" selected>كرة نار</option><option value="none">بلا</option><option value="arrow">بلا</option><option value="meteor">بلا</option></select></div>
+        <div class="setting-row"><label>قلب (Heart)</label><select id="red-heart-action"><option value="arrow" selected>بلا</option><option value="none">بلا</option><option value="fireball">كرة نار</option></select></div>
+        <div class="setting-row"><label>أسد (Lion)</label><select id="red-lion-action"><option value="nuke" selected>بلا</option><option value="none">بلا</option><option value="meteor">بلا</option></select></div>
+        <div class="setting-row"><label>هدية عامة</label><select id="red-gift-action"><option value="fireball" selected>كرة نار</option><option value="none">بلا</option><option value="arrow">بلا</option><option value="meteor">بلا</option></select></div>
+
+        <div class="setting-section-title">إعدادات القلعة الزرقاء</div>
+        <div class="setting-row"><label>تكبيس (Like)</label><select id="blue-like-action"><option value="none">بلا</option><option value="arrow">بلا</option><option value="fireball">كرة نار</option></select></div>
+        <div class="setting-row"><label>متابعة (Follow)</label><select id="blue-follow-action"><option value="arrow" selected>بلا</option><option value="none">بلا</option><option value="fireball">كرة نار</option></select></div>
+        <div class="setting-row"><label>شير (Share)</label><select id="blue-share-action"><option value="fireball" selected>كرة نار</option><option value="none">بلا</option><option value="arrow">بلا</option><option value="meteor">بلا</option></select></div>
+        <div class="setting-row"><label>وردة (Rose)</label><select id="blue-rose-action"><option value="fireball" selected>كرة نار</option><option value="none">بلا</option><option value="arrow">بلا</option><option value="meteor">بلا</option></select></div>
+        <div class="setting-row"><label>قلب (Heart)</label><select id="blue-heart-action"><option value="arrow" selected>بلا</option><option value="none">بلا</option><option value="fireball">كرة نار</option></select></div>
+        <div class="setting-row"><label>أسد (Lion)</label><select id="blue-lion-action"><option value="nuke" selected>بلا</option><option value="none">بلا</option><option value="meteor">بلا</option></select></div>
+        <div class="setting-row"><label>هدية عامة</label><select id="blue-gift-action"><option value="fireball" selected>كرة نار</option><option value="none">بلا</option><option value="arrow">بلا</option><option value="meteor">بلا</option></select></div>
+
+        <div class="setting-section-title">إعدادات عامة</div>
+        <div class="setting-row"><label>نقاط القلعة (HP)</label><select id="max-hp-setting"><option value="5000">5,000</option><option value="10000" selected>10,000</option><option value="20000">20,000</option><option value="50000">50,000</option></select></div>
+        <div class="setting-row"><label>عدد الجولات</label><select id="rounds-setting"><option value="1">بلا</option><option value="3" selected>3 جولات</option><option value="5">5 جولات</option></select></div>
+
+        <button id="close-settings-btn">إغلاق</button>
+    </div>
+
+    <!-- WINNER SCREEN -->
+    <div id="winner-screen">
+        <div id="winner-crown"></div>
+        <div id="winner-title">الفائز!</div>
+        <div id="round-badge">جولة 1 من 3</div>
+        <div style="color:#ccc; font-size:14px; margin-bottom:12px;">أكبر الداعمين:</div>
+        <div id="supporters-grid"></div>
+        <div style="display:flex; gap:12px;">
+            <button id="next-round-btn">الجولة التالية</button>
+            <button id="end-game-btn">إنهاء</button>
+        </div>
+    </div>
+
+</div>
+<script src="game.js"></script>
+
+<!-- Language Switcher -->
+<style>
+  .lang-btn {
+    position: fixed;
+    top: 15px;
+    left: 15px;
+    z-index: 9999;
+    background: linear-gradient(135deg, #00f2fe, #4facfe);
+    color: #fff;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-weight: bold;
+    cursor: pointer;
+    font-family: 'Cairo', sans-serif;
+    box-shadow: 0 4px 15px rgba(0,242,254,0.4);
+    transition: transform 0.2s;
+  }
+  .lang-btn:hover { transform: scale(1.05); }
+  .lang-ar { display: inline; }
+  .lang-en { display: none; }
+  body.en-mode .lang-ar { display: none; }
+  body.en-mode .lang-en { display: inline; }
+</style>
+<button class="lang-btn" onclick="toggleLang()" id="langToggleBtn">English</button>
+<script>
+  function applyLangToTextNodes(node) {
+    if (node.nodeType === 3) {
+      const text = node.nodeValue;
+      if (text.includes(' | ')) {
+        const parts = text.split(' | ');
+        if (parts.length === 2) {
+          const span = document.createElement('span');
+          span.innerHTML = '<span class="lang-en">' + parts[0] + '</span><span class="lang-ar">' + parts[1] + '</span>';
+          node.parentNode.replaceChild(span, node);
+        }
+      }
+    } else if (node.nodeType === 1 && node.nodeName !== 'SCRIPT' && node.nodeName !== 'STYLE') {
+      for (let i = 0; i < node.childNodes.length; i++) {
+        applyLangToTextNodes(node.childNodes[i]);
+      }
+    }
+  }
+
+  // Initial apply
+  document.addEventListener("DOMContentLoaded", () => {
+    applyLangToTextNodes(document.body);
+    
+    // Also handle input placeholders
+    const inputs = document.querySelectorAll('input, textarea');
+    inputs.forEach(input => {
+        if(input.placeholder && input.placeholder.includes(' | ')) {
+            const parts = input.placeholder.split(' | ');
+            input.setAttribute('data-en-placeholder', parts[0]);
+            input.setAttribute('data-ar-placeholder', parts[1]);
+            input.placeholder = document.body.classList.contains('en-mode') ? parts[0] : parts[1];
+        }
+    });
+    
+    // Load saved lang
+    if (localStorage.getItem('preferred_lang') === 'en') {
+        document.body.classList.add('en-mode');
+        document.getElementById('langToggleBtn').innerText = 'عربي';
+        updatePlaceholders();
+    }
+  });
+
+  function updatePlaceholders() {
+    const isEn = document.body.classList.contains('en-mode');
+    const inputs = document.querySelectorAll('input[data-en-placeholder]');
+    inputs.forEach(input => {
+        input.placeholder = isEn ? input.getAttribute('data-en-placeholder') : input.getAttribute('data-ar-placeholder');
+    });
+  }
+
+  function toggleLang() {
+    document.body.classList.toggle('en-mode');
+    const isEn = document.body.classList.contains('en-mode');
+    document.getElementById('langToggleBtn').innerText = isEn ? 'عربي' : 'English';
+    localStorage.setItem('preferred_lang', isEn ? 'en' : 'ar');
+    updatePlaceholders();
+  }
+</script>
+
+<script src="/alerts.js"></script>
+</body>
+</html>
+

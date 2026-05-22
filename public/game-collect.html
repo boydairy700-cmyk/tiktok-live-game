@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>   </title>
+    <link rel="stylesheet" href="style.css">
+    <script src="/socket.io/socket.io.js"></script>
+    <style>
+        .settings select {
+            font-size: 13px;
+            width: 100%;
+            padding: 8px;
+            margin-top: 5px;
+            border-radius: 5px;
+            background: #2a2a35;
+            color: white;
+            border: 1px solid #444;
+        }
+        .settings label {
+            display: block;
+            margin-bottom: 12px;
+            font-size: 14px;
+            font-weight: bold;
+        }
+        .settings {
+            max-height: 400px;
+            overflow-y: auto;
+            padding-left: 10px;
+        }
+        .settings::-webkit-scrollbar { width: 6px; }
+        .settings::-webkit-scrollbar-thumb { background: #e94560; border-radius: 3px; }
+        
+        #setup-panel {
+            max-width: 400px;
+            width: 90%;
+            z-index: 100;
+        }
+    </style>
+<link rel="stylesheet" href="/cursor.css">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>   </title>
+    <link rel="stylesheet" href="style.css">
+    <script src="/socket.io/socket.io.js"></script>
+    <style>
+        .settings select {
+            font-size: 13px;
+            width: 100%;
+            padding: 8px;
+            margin-top: 5px;
+            border-radius: 5px;
+            background: #2a2a35;
+            color: white;
+            border: 1px solid #444;
+        }
+        .settings label {
+            display: block;
+            margin-bottom: 12px;
+            font-size: 14px;
+            font-weight: bold;
+        }
+        .settings {
+            max-height: 400px;
+            overflow-y: auto;
+            padding-left: 10px;
+        }
+        .settings::-webkit-scrollbar { width: 6px; }
+        .settings::-webkit-scrollbar-thumb { background: #e94560; border-radius: 3px; }
+        
+        #setup-panel {
+            max-width: 400px;
+            width: 90%;
+            z-index: 100;
+        }
+    </style>
+<link rel="stylesheet" href="/cursor.css">
+<script src="/cursor.js"></script>
+</head>
+<body class="rtl-dir">
+    <div id="bg-animation" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; background: radial-gradient(circle at center, #1a1a2e 0%, #05050a 100%);"></div>
+    <div id="ui-layer">
+        
+        <!--      -->
+        <button id="settings-toggle-btn" style="display: none; position: absolute; top: 20px; right: 20px; z-index: 50; padding: 12px; font-size: 24px; border-radius: 50%; background: #1a1a2e; border: 2px solid #e94560; color: #fff; cursor: pointer; box-shadow: 0 0 15px rgba(233,69,96,0.5); pointer-events: auto;">⚙️</button>
+
+        <!-- زر التعليمات -->
+        <button id="instructions-toggle-btn" style="display: none; position: absolute; top: 90px; right: 20px; z-index: 50; padding: 10px; font-size: 16px; border-radius: 12px; background: rgba(15, 15, 26, 0.8); border: 2px solid #00f2fe; color: #fff; cursor: pointer; box-shadow: 0 0 15px rgba(0,242,254,0.3); pointer-events: auto; backdrop-filter: blur(5px); font-weight: bold;">📜 التعليمات</button>
+
+        <div id="setup-panel" class="glass-panel">
+            <h1 style="font-size: 22px; text-align: center; margin-bottom: 15px;">إعداد اللعبة</h1>
+            
+            <div id="connection-inputs">
+                <input type="text" id="username-input" placeholder="يوزر تيك توك" style="width: 100%; padding: 10px; margin-bottom: 5px; border-radius: 5px; border:none; outline:none;">
+                <p style="font-size: 11px; color: #ccc; margin-bottom: 5px;">سيشن آي دي اختياري (NoWSUpgradeError):</p>
+                <input type="password" id="session-input" placeholder="SessionId (اختياري)" style="width: 100%; padding: 10px; margin-bottom: 15px; border-radius: 5px; border:none; outline:none;">
+            </div>
+            
+            <div class="settings">
+                <h3 style="border-bottom: 1px solid #444; padding-bottom: 5px;">الإعدادات</h3>
+                <label>مدة المباراة:
+                    <select id="game-duration">
+                        <option value="3">٣ دقائق</option>
+                        <option value="5" selected>٥ دقائق</option>
+                        <option value="10">١٠ دقائق</option>
+                        <option value="0">بدون وقت</option>
+                    </select>
+                </label>
+                
+                <script>
+                    const optionsHTML = `
+                        <option value="join">انضمام</option>
+                        <option value="grow_small">تكبير (+هجوم)</option>
+                        <option value="grow_big">عملاق (+هجوم خارق)</option>
+                        <option value="heal">علاج</option>
+                        <option value="shoot">إطلاق أشواك</option>
+                        <option value="shoot_many">وابل أشواك</option>
+                        <option value="saw">منشار حاد</option>
+                        <option value="speed_boost">سرعة مضاعفة</option>
+                        <option value="shield">درع حماية</option>
+                        <option value="ghost">شبح (لا يقهر)</option>
+                        <option value="electric_shock">صعق كهربائي</option>
+                        <option value="freeze_others">تجميد الجميع</option>
+                        <option value="shrink_others">تصغير الأعداء</option>
+                        <option value="magnetic_pull">مغناطيس (سحب)</option>
+                        <option value="tornado">إعصار (إبعاد)</option>
+                        <option value="meteor_strike">ضربة نيزك (دمار)</option>
+                        <option value="laser_beam">شعاع ليزر</option>
+                        <option value="black_hole">ثقب أسود (سحب وتدمير)</option>
+                    `;
+
+                    document.write(`
+                    <label>التعليق (Comment):
+                        <select id="chat-action" class="action-select">
+                            ${optionsHTML}
+                        </select>
+                    </label>
+
+                    <label>الإعجاب (Like):
+                        <select id="like-action" class="action-select">
+                            ${optionsHTML}
+                        </select>
+                    </label>
+
+                    <label>المتابعة (Follow):
+                        <select id="follow-action" class="action-select">
+                            ${optionsHTML}
+                        </select>
+                    </label>
+
+                    <label>المشاركة (Share):
+                        <select id="share-action" class="action-select">
+                            ${optionsHTML}
+                        </select>
+                    </label>
+
+                    <div style="background: rgba(255,255,255,0.05); padding: 10px; border-radius: 8px; border-right: 3px solid #e94560;">
+                        <h4 style="margin-top: 0; margin-bottom: 10px; color: #ffd700;">هدايا التيك توك</h4>
+                        
+                        <label>هدية 1 عملة (وردة):
+                            <select id="gift-1-action" class="action-select">
+                                ${optionsHTML}
+                            </select>
+                        </label>
+
+                        <label>هدية 5 عملات:
+                            <select id="gift-5-action" class="action-select">
+                                ${optionsHTML}
+                            </select>
+                        </label>
+
+                        <label>هدية 30 عملة:
+                            <select id="gift-30-action" class="action-select">
+                                ${optionsHTML}
+                            </select>
+                        </label>
+
+                        <label>هدية 100+ عملة (قبعة):
+                            <select id="gift-100-action" class="action-select">
+                                ${optionsHTML}
+                            </select>
+                        </label>
+
+                        <label>هدية 1000+ عملة (أسد):
+                            <select id="gift-1000-action" class="action-select">
+                                ${optionsHTML}
+                            </select>
+                        </label>
+                    </div>
+                    `);
+
+                    // Set Defaults
+                    document.getElementById('chat-action').value = 'join';
+                    document.getElementById('like-action').value = 'shoot';
+                    document.getElementById('follow-action').value = 'grow_big';
+                    document.getElementById('share-action').value = 'speed_boost';
+                    
+                    document.getElementById('gift-1-action').value = 'saw';
+                    document.getElementById('gift-5-action').value = 'electric_shock';
+                    document.getElementById('gift-30-action').value = 'laser_beam';
+                    document.getElementById('gift-100-action').value = 'meteor_strike';
+                    document.getElementById('gift-1000-action').value = 'black_hole';
+                </script>
+
+                <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; background: rgba(255,255,255,0.05); padding: 10px; border-radius: 8px; margin-top: 10px; border: 1px solid rgba(255,255,255,0.1);">
+                    <input type="checkbox" id="auto-restart-toggle" style="width: 20px; height: 20px; margin: 0; cursor: pointer;">
+                    <span style="font-size: 14px; font-weight: bold;">إعادة تلقائية (5 ثوانٍ)</span>
+                </label>
+            </div>
+            
+            <button id="connect-btn" class="animate-pulse" style="margin-top: 15px; width: 100%;">اتصال</button>
+            <button id="test-mode-btn" style="margin-top: 10px; background: #444; border: 2px solid #666; width: 100%; padding: 15px; color: white; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: bold;">وضع الاختبار</button>
+            
+            <button id="close-settings-btn" style="display: none; margin-top: 15px; background: #e94560; width: 100%; padding: 12px; color: white; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: bold; border:none;">إغلاق</button>
+            
+            <div id="status-msg" style="text-align: center; margin-top: 15px; font-weight: 900; color: #ffd700; text-shadow: 0 0 10px rgba(255,215,0,0.3);"></div>
+        </div>
+
+        <div id="visual-instructions" class="glass-panel" style="display: none; position: absolute; left: 30px; top: 30px; padding: 25px; width: 300px; z-index: 20; max-height: 90vh; overflow-y: auto;">
+            <h3 style="margin: 0 0 15px 0; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px;">التعليمات</h3>
+            
+            <div class="instruction-card">
+                <div class="icon-box" style="background: transparent;">
+                    <svg width="35" height="35" viewBox="0 0 48 48" fill="#ff0050" xmlns="http://www.w3.org/2000/svg"><path d="M24 42.7l-3.4-3.1C9.4 29.5 2 22.8 2 14.5 2 7.7 7.4 2.2 14.2 2.2c3.9 0 7.6 1.8 10 4.7 2.4-2.9 6.1-4.7 10-4.7C41 2.2 46 7.7 46 14.5c0 8.3-7.4 15-18.6 25.1L24 42.7z"/></svg>
+                </div>
+                <div class="details">
+                    <span class="title">إعجاب (Like)</span>
+                    <span class="action" id="lbl-like">...</span>
+                </div>
+            </div>
+            
+            <div class="instruction-card">
+                <div class="icon-box" style="background: transparent;">
+                    <svg width="32" height="32" viewBox="0 0 48 48" fill="#ffffff" xmlns="http://www.w3.org/2000/svg"><path d="M44 24c0 11-9 20-20 20-3.3 0-6.4-.8-9.1-2.2L4 44l2.2-10.9C4.8 30.4 4 27.3 4 24 4 13 13 4 24 4s20 9 20 20zM15 24a3 3 0 100-6 3 3 0 000 6zm9 0a3 3 0 100-6 3 3 0 000 6zm9 0a3 3 0 100-6 3 3 0 000 6z"/></svg>
+                </div>
+                <div class="details">
+                    <span class="title">تعليق (Comment)</span>
+                    <span class="action" id="lbl-chat">...</span>
+                </div>
+            </div>
+
+            <div class="instruction-card">
+                <div class="icon-box" style="background: #00f2fe; border-radius: 50%; width: 32px; height: 32px; display: flex; justify-content: center; align-items: center; box-shadow: 0 0 10px #00f2fe;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="#ffffff" xmlns="http://www.w3.org/2000/svg"><path d="M19 11h-6V5h-2v6H5v2h6v6h2v-6h6v-2z"/></svg>
+                </div>
+                <div class="details" style="margin-right: 12px;">
+                    <span class="title">متابعة (Follow)</span>
+                    <span class="action" id="lbl-follow">...</span>
+                </div>
+            </div>
+
+            <div class="instruction-card">
+                <div class="icon-box" style="background: transparent;">
+                    <svg width="32" height="32" viewBox="0 0 48 48" fill="#ffffff" xmlns="http://www.w3.org/2000/svg"><path d="M26 4.6v9.4C13.2 15 4 22 4 33.6c4.6-6 11.2-8.8 22-8.8v9.8L44 19.1 26 4.6z"/></svg>
+                </div>
+                <div class="details">
+                    <span class="title">مشاركة (Share)</span>
+                    <span class="action" id="lbl-share">...</span>
+                </div>
+            </div>
+
+            <div class="instruction-card" style="margin-top: 15px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px;">
+                <div class="icon-box" style="background: transparent; overflow: hidden; width: 55px; height: 55px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.2);">
+                    <img src="assets/rose.png" style="width: 100%; height: 100%; object-fit: cover;">
+                </div>
+                <div class="details">
+                    <span class="title">وردة (1 عملة)</span>
+                    <span class="action" id="lbl-gift-1" style="color: #ff4b2b;">...</span>
+                </div>
+            </div>
+
+            <div class="instruction-card">
+                <div class="icon-box" style="background: transparent; overflow: hidden; width: 55px; height: 55px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.2);">
+                    <img src="assets/finger_heart.png" style="width: 100%; height: 100%; object-fit: cover;">
+                </div>
+                <div class="details">
+                    <span class="title">قلب (5 عملات)</span>
+                    <span class="action" id="lbl-gift-5" style="color: #78ffd6;">...</span>
+                </div>
+            </div>
+
+            <div class="instruction-card">
+                <div class="icon-box" style="background: transparent; overflow: hidden; width: 55px; height: 55px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.2);">
+                    <img src="assets/perfume.png" style="width: 100%; height: 100%; object-fit: cover;">
+                </div>
+                <div class="details">
+                    <span class="title">عطر (30 عملة)</span>
+                    <span class="action" id="lbl-gift-30" style="color: #f6d365;">...</span>
+                </div>
+            </div>
+
+            <div class="instruction-card">
+                <div class="icon-box" style="background: transparent; overflow: hidden; width: 55px; height: 55px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.2);">
+                    <img src="assets/cap.png" style="width: 100%; height: 100%; object-fit: cover;">
+                </div>
+                <div class="details">
+                    <span class="title">قبعة (100+ عملة)</span>
+                    <span class="action" id="lbl-gift-100" style="color: #00f2fe;">...</span>
+                </div>
+            </div>
+
+            <div class="instruction-card">
+                <div class="icon-box" style="background: transparent; overflow: hidden; width: 55px; height: 55px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.2);">
+                    <img src="assets/lion.png" style="width: 100%; height: 100%; object-fit: cover;">
+                </div>
+                <div class="details">
+                    <span class="title">أسد (1000+ عملة)</span>
+                    <span class="action" id="lbl-gift-1000" style="color: #ffd700;">...</span>
+                </div>
+            </div>
+        </div>
+
+        <div id="leaderboard" class="glass-panel" style="display: none; position: absolute; right: 30px; top: 90px;">
+            <h3>المتصدرين</h3>
+            <ul id="leaderboard-list"></ul>
+        </div>
+        
+        <div id="game-status" style="display: none;">
+             المضيف: <span id="connected-user" style="color: #e94560;"></span>
+        </div>
+
+        <div id="timer-display" style="display: none; position: absolute; top: 20px; left: 50%; transform: translateX(-50%); font-size: 36px; font-weight: bold; background: rgba(0,0,0,0.8); padding: 10px 40px; border-radius: 15px; color: #fff; border: 3px solid #e94560; box-shadow: 0 0 20px rgba(233,69,96,0.8); z-index: 5;">
+            00:00
+        </div>
+
+        <div id="winner-screen" style="display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 100; flex-direction: column; justify-content: center; align-items: center; pointer-events: auto;">
+            <h1 style="color: #ffd700; font-size: 70px; text-shadow: 0 0 30px #ffd700; margin-bottom: 50px;">انتهت المباراة!</h1>
+            <div id="winners-list" style="display: flex; gap: 40px; align-items: flex-end; height: 350px;">
+                <!-- Podium Winners (1-3) injected via JS -->
+            </div>
+            
+            <div id="extra-winners-list" style="display: flex; flex-direction: column; gap: 10px; margin-top: 30px; width: 400px;">
+                <!-- Extra Winners (4-7) injected via JS -->
+            </div>
+            <div id="auto-restart-status" style="display: none; color: #00f2fe; font-size: 20px; margin-top: 20px; font-weight: bold; text-shadow: 0 0 10px rgba(0,242,254,0.5);">
+                إعادة تلقائية بعد <span id="auto-restart-timer">5</span> ...
+            </div>
+            <button id="restart-btn" style="margin-top: 40px; padding: 15px 50px; font-size: 26px; font-weight: bold; background: #e94560; color: #fff; border: none; border-radius: 15px; cursor: pointer; box-shadow: 0 0 25px #e94560; transition: transform 0.3s;">إلعب مرة أخرى</button>
+        </div>
+    </div>
+
+    <canvas id="game-canvas"></canvas>
+
+    <script src="game.js"></script>
+
+<!-- Language Switcher -->
+<style>
+  .lang-btn {
+    position: fixed;
+    top: 15px;
+    left: 15px;
+    z-index: 9999;
+    background: linear-gradient(135deg, #00f2fe, #4facfe);
+    color: #fff;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-weight: bold;
+    cursor: pointer;
+    font-family: 'Cairo', sans-serif;
+    box-shadow: 0 4px 15px rgba(0,242,254,0.4);
+    transition: transform 0.2s;
+  }
+  .lang-btn:hover { transform: scale(1.05); }
+  .lang-ar { display: inline; }
+  .lang-en { display: none; }
+  body.en-mode .lang-ar { display: none; }
+  body.en-mode .lang-en { display: inline; }
+</style>
+<button class="lang-btn" onclick="toggleLang()" id="langToggleBtn">English</button>
+<script>
+  function applyLangToTextNodes(node) {
+    if (node.nodeType === 3) {
+      const text = node.nodeValue;
+      if (text.includes(' | ')) {
+        const parts = text.split(' | ');
+        if (parts.length === 2) {
+          const span = document.createElement('span');
+          span.innerHTML = '<span class="lang-en">' + parts[0] + '</span><span class="lang-ar">' + parts[1] + '</span>';
+          node.parentNode.replaceChild(span, node);
+        }
+      }
+    } else if (node.nodeType === 1 && node.nodeName !== 'SCRIPT' && node.nodeName !== 'STYLE') {
+      for (let i = 0; i < node.childNodes.length; i++) {
+        applyLangToTextNodes(node.childNodes[i]);
+      }
+    }
+  }
+
+  // Initial apply
+  document.addEventListener("DOMContentLoaded", () => {
+    applyLangToTextNodes(document.body);
+    
+    // Also handle input placeholders
+    const inputs = document.querySelectorAll('input, textarea');
+    inputs.forEach(input => {
+        if(input.placeholder && input.placeholder.includes(' | ')) {
+            const parts = input.placeholder.split(' | ');
+            input.setAttribute('data-en-placeholder', parts[0]);
+            input.setAttribute('data-ar-placeholder', parts[1]);
+            input.placeholder = document.body.classList.contains('en-mode') ? parts[0] : parts[1];
+        }
+    });
+    
+    // Load saved lang
+    if (localStorage.getItem('preferred_lang') === 'en') {
+        document.body.classList.add('en-mode');
+        document.getElementById('langToggleBtn').innerText = 'عربي';
+        updatePlaceholders();
+    }
+  });
+
+  function updatePlaceholders() {
+    const isEn = document.body.classList.contains('en-mode');
+    const inputs = document.querySelectorAll('input[data-en-placeholder]');
+    inputs.forEach(input => {
+        input.placeholder = isEn ? input.getAttribute('data-en-placeholder') : input.getAttribute('data-ar-placeholder');
+    });
+  }
+
+  function toggleLang() {
+    document.body.classList.toggle('en-mode');
+    const isEn = document.body.classList.contains('en-mode');
+    document.getElementById('langToggleBtn').innerText = isEn ? 'عربي' : 'English';
+    localStorage.setItem('preferred_lang', isEn ? 'en' : 'ar');
+    updatePlaceholders();
+  }
+</script>
+
+</body>
+</html>
+

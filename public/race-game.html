@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>  </title>
+    <link rel="stylesheet" href="style.css">
+    <script src="/socket.io/socket.io.js"></script>
+    <style>
+        .settings select {
+            font-size: 13px; width: 100%; padding: 8px; margin-top: 5px;
+            border-radius: 5px; background: #2a2a35; color: white; border: 1px solid #444;
+        }
+        .settings label { display: block; margin-bottom: 12px; font-size: 14px; font-weight: bold; }
+        .settings { max-height: 400px; overflow-y: auto; padding-left: 10px; }
+        .settings::-webkit-scrollbar { width: 6px; }
+        .settings::-webkit-scrollbar-thumb { background: #e94560; border-radius: 3px; }
+        #setup-panel { max-width: 400px; width: 90%; z-index: 100; }
+    </style>
+<link rel="stylesheet" href="/cursor.css">
+<script src="/cursor.js"></script>
+</head>
+<body class="rtl-dir">
+    <div id="bg-animation" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; background: radial-gradient(circle at center, #1a1a2e 0%, #05050a 100%);"></div>
+    <div id="ui-layer">
+        <button id="settings-toggle-btn" style="display: none; position: absolute; top: 20px; right: 20px; z-index: 50; padding: 12px; font-size: 24px; border-radius: 50%; background: #1a1a2e; border: 2px solid #e94560; color: #fff; cursor: pointer; box-shadow: 0 0 15px rgba(233,69,96,0.5); pointer-events: auto;"></button>
+        <button id="instructions-toggle-btn" style="display: none; position: absolute; top: 90px; right: 20px; z-index: 50; padding: 10px; font-size: 16px; border-radius: 12px; background: rgba(15, 15, 26, 0.8); border: 2px solid #00f2fe; color: #fff; cursor: pointer; box-shadow: 0 0 15px rgba(0,242,254,0.3); pointer-events: auto; backdrop-filter: blur(5px); font-weight: bold;"> </button>
+
+        <div id="setup-panel" class="glass-panel">
+            <h1 style="font-size: 22px; text-align: center; margin-bottom: 15px;">  </h1>
+            
+            <div id="connection-inputs">
+                <input type="text" id="username-input" placeholder="  (: tiktok)" style="width: 100%; padding: 10px; margin-bottom: 5px; border-radius: 5px; border:none; outline:none;">
+                <p style="font-size: 11px; color: #ccc; margin-bottom: 5px;">    (NoWSUpgradeError):</p>
+                <input type="password" id="session-input" placeholder="SessionId (   )" style="width: 100%; padding: 10px; margin-bottom: 15px; border-radius: 5px; border:none; outline:none;">
+            </div>
+            
+            <button id="connect-btn" class="animate-pulse" style="margin-top: 15px; width: 100%;">  </button>
+            <button id="test-mode-btn" style="margin-top: 10px; background: #444; border: 2px solid #666; width: 100%; padding: 15px; color: white; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: bold;">   (  )</button>
+            <button id="close-settings-btn" style="display: none; margin-top: 15px; background: #e94560; width: 100%; padding: 12px; color: white; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: bold; border:none;">   </button>
+            <div id="status-msg" style="text-align: center; margin-top: 15px; font-weight: 900; color: #ffd700; text-shadow: 0 0 10px rgba(255,215,0,0.3);"></div>
+        </div>
+
+        <div id="leaderboard" class="glass-panel" style="display: none; position: absolute; right: 30px; top: 90px; width: 250px;">
+            <h3> </h3>
+            <ul id="leaderboard-list"></ul>
+        </div>
+        
+        <div id="game-status" style="display: none; position: absolute; bottom: 20px; right: 20px; background: rgba(0,0,0,0.5); padding: 10px; border-radius: 8px;">
+             : <span id="connected-user" style="color: #e94560;"></span>
+        </div>
+
+        <div id="debug-panel" style="display: none; position: absolute; bottom: 70px; right: 20px; background: rgba(26, 26, 46, 0.9); border: 1px solid #ffd700; padding: 15px; border-radius: 10px; z-index: 50; pointer-events: auto; display: flex; flex-direction: column; gap: 8px;">
+            <h4 style="margin: 0; color: #ffd700; text-align: center; font-size: 14px;">   </h4>
+            <button class="test-gift-btn" data-gift="rose" style="background: #ff4b2b; color: #fff; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer;">  </button>
+            <button class="test-gift-btn" data-gift="heart" style="background: #ff69b4; color: #fff; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer;">  </button>
+            <button class="test-gift-btn" data-gift="tiktok" style="background: #00f2fe; color: #fff; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer;">   </button>
+            <button class="test-gift-btn" data-gift="lion" style="background: #ffd700; color: #000; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer; font-weight: bold;">  </button>
+        </div>
+
+        <div id="visual-instructions" class="glass-panel" style="display: none; position: absolute; left: 30px; bottom: 30px; width: 250px; padding: 15px;">
+            <h3 style="margin: 0 0 15px 0; text-align: center; color: #00f2fe; font-size: 16px; font-weight: bold;">   </h3>
+            <div class="instruction-card">
+                <div class="icon-box" style="font-size: 24px;"></div>
+                <div class="details">
+                    <span class="title" style="color:#ff4b2b;"></span>
+                    <span class="action" style="font-size:12px;">  </span>
+                </div>
+            </div>
+            <div class="instruction-card">
+                <div class="icon-box" style="font-size: 24px;"></div>
+                <div class="details">
+                    <span class="title" style="color:#ff69b4;"></span>
+                    <span class="action" style="font-size:12px;">  </span>
+                </div>
+            </div>
+            <div class="instruction-card">
+                <div class="icon-box" style="font-size: 24px;"></div>
+                <div class="details">
+                    <span class="title" style="color:#00f2fe;"> </span>
+                    <span class="action" style="font-size:12px;">  </span>
+                </div>
+            </div>
+            <div class="instruction-card">
+                <div class="icon-box" style="font-size: 24px;"></div>
+                <div class="details">
+                    <span class="title" style="color:#ffd700;"> </span>
+                    <span class="action" style="font-size:12px;">  !</span>
+                </div>
+            </div>
+        </div>
+
+        <div id="winner-screen" style="display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 100; flex-direction: column; justify-content: center; align-items: center; pointer-events: auto;">
+            <h1 style="color: #ffd700; font-size: 70px; text-shadow: 0 0 30px #ffd700; margin-bottom: 50px;" id="winner-title">  ! </h1>
+            <div id="winner-info" style="display: flex; flex-direction: column; align-items: center;"></div>
+            <button id="restart-btn" style="margin-top: 40px; padding: 15px 50px; font-size: 26px; font-weight: bold; background: #e94560; color: #fff; border: none; border-radius: 15px; cursor: pointer; box-shadow: 0 0 25px #e94560; transition: transform 0.3s;">  </button>
+        </div>
+    </div>
+    <canvas id="game-canvas"></canvas>
+    <script src="race-game.js"></script>
+
+<!-- Language Switcher -->
+<style>
+  .lang-btn {
+    position: fixed;
+    top: 15px;
+    left: 15px;
+    z-index: 9999;
+    background: linear-gradient(135deg, #00f2fe, #4facfe);
+    color: #fff;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-weight: bold;
+    cursor: pointer;
+    font-family: 'Cairo', sans-serif;
+    box-shadow: 0 4px 15px rgba(0,242,254,0.4);
+    transition: transform 0.2s;
+  }
+  .lang-btn:hover { transform: scale(1.05); }
+  .lang-ar { display: inline; }
+  .lang-en { display: none; }
+  body.en-mode .lang-ar { display: none; }
+  body.en-mode .lang-en { display: inline; }
+</style>
+<button class="lang-btn" onclick="toggleLang()" id="langToggleBtn">English</button>
+<script>
+  function applyLangToTextNodes(node) {
+    if (node.nodeType === 3) {
+      const text = node.nodeValue;
+      if (text.includes(' | ')) {
+        const parts = text.split(' | ');
+        if (parts.length === 2) {
+          const span = document.createElement('span');
+          span.innerHTML = '<span class="lang-en">' + parts[0] + '</span><span class="lang-ar">' + parts[1] + '</span>';
+          node.parentNode.replaceChild(span, node);
+        }
+      }
+    } else if (node.nodeType === 1 && node.nodeName !== 'SCRIPT' && node.nodeName !== 'STYLE') {
+      for (let i = 0; i < node.childNodes.length; i++) {
+        applyLangToTextNodes(node.childNodes[i]);
+      }
+    }
+  }
+
+  // Initial apply
+  document.addEventListener("DOMContentLoaded", () => {
+    applyLangToTextNodes(document.body);
+    
+    // Also handle input placeholders
+    const inputs = document.querySelectorAll('input, textarea');
+    inputs.forEach(input => {
+        if(input.placeholder && input.placeholder.includes(' | ')) {
+            const parts = input.placeholder.split(' | ');
+            input.setAttribute('data-en-placeholder', parts[0]);
+            input.setAttribute('data-ar-placeholder', parts[1]);
+            input.placeholder = document.body.classList.contains('en-mode') ? parts[0] : parts[1];
+        }
+    });
+    
+    // Load saved lang
+    if (localStorage.getItem('preferred_lang') === 'en') {
+        document.body.classList.add('en-mode');
+        document.getElementById('langToggleBtn').innerText = 'عربي';
+        updatePlaceholders();
+    }
+  });
+
+  function updatePlaceholders() {
+    const isEn = document.body.classList.contains('en-mode');
+    const inputs = document.querySelectorAll('input[data-en-placeholder]');
+    inputs.forEach(input => {
+        input.placeholder = isEn ? input.getAttribute('data-en-placeholder') : input.getAttribute('data-ar-placeholder');
+    });
+  }
+
+  function toggleLang() {
+    document.body.classList.toggle('en-mode');
+    const isEn = document.body.classList.contains('en-mode');
+    document.getElementById('langToggleBtn').innerText = isEn ? 'عربي' : 'English';
+    localStorage.setItem('preferred_lang', isEn ? 'en' : 'ar');
+    updatePlaceholders();
+  }
+</script>
+
+</body>
+</html>
+

@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>شد الحبل</title>
+    <script src="/socket.io/socket.io.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap');
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { margin: 0; overflow: hidden; background: #0a0a1a; font-family: 'Cairo', sans-serif; }
+        canvas { display: block; position: absolute; top: 0; left: 0; }
+        #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10; pointer-events: none; }
+        
+        #setup-panel {
+            pointer-events: auto;
+            background: linear-gradient(135deg,rgba(10,10,25,.97),rgba(25,8,15,.97));
+            padding: 30px 28px; border-radius: 18px;
+            border: 2px solid #e94560; max-width: 420px;
+            margin: 35px auto; text-align: center; color: white;
+            box-shadow: 0 0 40px rgba(233,69,96,.5);
+        }
+        #setup-panel h2 { font-size: 24px; font-weight: 900; margin-bottom: 6px;
+            background: linear-gradient(90deg,#ff4b2b,#ffd700);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        #setup-panel p { font-size: 14px; color: #aaa; margin-bottom: 16px; line-height: 1.6; }
+        #setup-panel input { width:100%; padding:10px; margin-bottom:10px; border-radius:8px; border:1px solid #444; background:rgba(255,255,255,.08); color:white; outline:none; }
+        #setup-panel input:focus { border-color:#e94560; }
+        #setup-panel button { width:100%; padding:12px; margin-bottom:8px; border-radius:10px; border:none; font-weight:700; font-size:15px; cursor:pointer; color:white; transition:transform .15s; }
+        #setup-panel button:hover { transform:translateY(-2px); }
+        #connect-btn { background:linear-gradient(135deg,#e94560,#c0392b); }
+        #test-mode-btn { background:linear-gradient(135deg,#2c3e50,#34495e); border:1px solid #555; }
+        
+        #score-board { display:none; position:absolute; top:12px; left:50%; transform:translateX(-50%); width:88%; max-width:750px; pointer-events:none; }
+        .score-row { display:flex; align-items:center; gap:8px; }
+        .team-label { font-size:16px; font-weight:900; white-space:nowrap; min-width:80px; text-shadow: 0 0 10px currentColor; }
+        #red-label { color:#ff4b2b; text-align:right; }
+        #blue-label { color:#00aaff; text-align:left; }
+        
+        #admin-panel {
+            display:none; pointer-events:auto; position:absolute; top:20px; right:12px;
+            background:rgba(10,10,25,.97); border:2px solid #ffd700; border-radius:14px; padding:12px;
+            color:white; width:180px; z-index:20;
+        }
+        .admin-btn { width:100%; padding:8px 4px; margin-bottom:5px; border-radius:6px; border:none; font-weight:700; font-size:12px; cursor:pointer; color:white; }
+        
+        #winner-screen {
+            display:none; position:absolute; top:0; left:0; width:100%; height:100%;
+            background:rgba(0,0,0,.93); z-index:200;
+            flex-direction:column; justify-content:center; align-items:center; pointer-events:auto;
+        }
+        #winner-title { font-size:46px; font-weight:900; text-shadow:0 0 40px currentColor; margin:10px 0 20px; }
+        #supporters-grid { display:flex; flex-wrap:wrap; justify-content:center; gap:10px; max-width:700px; margin-bottom:25px; }
+        .supporter-card { display:flex; align-items:center; gap:8px; background:rgba(255,255,255,.1); border-radius:10px; padding:8px 14px; }
+        .supporter-card img { width:36px; height:36px; border-radius:50%; }
+        
+        #instructions { display:none; position:absolute; bottom:12px; left:50%; transform:translateX(-50%); background:rgba(0,0,0,.75); padding:7px 18px; border-radius:25px; border:1px solid rgba(255,215,0,.35); color:#ddd; font-size:14px; pointer-events:none; white-space:nowrap; z-index:5; }
+    </style>
+    <link rel="stylesheet" href="/alerts.css">
+</head>
+<body>
+<canvas id="game-canvas"></canvas>
+<div id="ui-layer">
+
+    <div id="setup-panel">
+        <h2>لعبة شد الحبل</h2>
+        <p>الأحمر (تكبيس) ضد الأزرق (شير)</p>
+        <input type="text" id="username-input" placeholder="اسم المستخدم">
+        <input type="password" id="session-input" placeholder="SessionId (اختياري)">
+        <button id="connect-btn">بدء اللعب</button>
+        <button id="test-mode-btn">وضع التجربة</button>
+        <div id="status-msg" style="margin-top:8px;color:#ffd700;font-weight:700;"></div>
+    </div>
+
+    <div id="score-board">
+        <div class="score-row">
+            <div class="team-label" id="red-label">الأحمر (تكبيس)</div>
+            <div style="flex:1; text-align:center; color:#ffd700; font-weight:900; font-size:24px;">VS</div>
+            <div class="team-label" id="blue-label">الأزرق (شير)</div>
+        </div>
+    </div>
+
+    <div id="admin-panel">
+        <h4 style="text-align:center; color:#ffd700; margin-bottom:10px;">لوحة التحكم</h4>
+        <button class="admin-btn" style="background:linear-gradient(90deg,#ff4b2b,#8b0000);" id="test-red-btn">سحب للأحمر</button>
+        <button class="admin-btn" style="background:linear-gradient(90deg,#00aaff,#003080);" id="test-blue-btn">سحب للأزرق</button>
+        <hr style="border-color:#555; margin:10px 0;">
+        <button class="admin-btn" style="background:#333;" id="reset-btn">إعادة ضبط</button>
+    </div>
+
+    <div id="instructions">
+        تكبيس = سحب للأحمر | شير = سحب للأزرق | هدايا = سحب قوي!
+    </div>
+
+    <div id="winner-screen">
+        <div id="winner-title">الفائز!</div>
+        <div style="color:#ccc; margin-bottom:12px;">أكبر الداعمين:</div>
+        <div id="supporters-grid"></div>
+        <button class="admin-btn" style="background:#e94560; max-width:200px; padding:15px; font-size:18px;" id="next-round-btn">الجولة التالية</button>
+    </div>
+
+</div>
+<script src="game.js"></script>
+<script src="/alerts.js"></script>
+</body>
+</html>

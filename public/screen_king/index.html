@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ملك الشاشة 👑</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@700;900&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: transparent;
+            font-family: 'Cairo', sans-serif;
+            overflow: hidden;
+            width: 100vw; height: 100vh;
+            display: flex; align-items: center; justify-content: center;
+        }
+
+        #king-throne {
+            position: relative;
+            text-align: center;
+            animation: throneFloat 3s ease-in-out infinite;
+        }
+        @keyframes throneFloat {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        #crown {
+            font-size: 80px;
+            display: block;
+            animation: crownBounce 1s ease-in-out infinite alternate;
+            filter: drop-shadow(0 0 20px #ffd700);
+        }
+        @keyframes crownBounce {
+            from { transform: translateY(0) rotate(-5deg); }
+            to { transform: translateY(-8px) rotate(5deg); }
+        }
+
+        #king-avatar {
+            width: 180px; height: 180px;
+            border-radius: 50%;
+            border: 6px solid #ffd700;
+            box-shadow: 0 0 40px rgba(255,215,0,0.8), 0 0 80px rgba(255,215,0,0.3);
+            object-fit: cover;
+            transition: all 0.5s ease;
+            display: block;
+            margin: 0 auto;
+        }
+
+        #king-glow-ring {
+            position: absolute;
+            top: 70px; left: 50%;
+            transform: translateX(-50%);
+            width: 200px; height: 200px;
+            border-radius: 50%;
+            border: 3px solid #ffd700;
+            animation: ringPulse 1.5s ease-in-out infinite;
+        }
+        @keyframes ringPulse {
+            0% { transform: translateX(-50%) scale(1); opacity: 0.8; }
+            100% { transform: translateX(-50%) scale(1.4); opacity: 0; }
+        }
+
+        #king-name {
+            font-size: 36px; font-weight: 900;
+            color: #ffd700;
+            text-shadow: 0 0 20px rgba(255,215,0,0.8);
+            margin-top: 15px;
+            max-width: 300px;
+            word-break: break-word;
+        }
+
+        #king-title {
+            font-size: 22px; font-weight: 700;
+            color: #fff;
+            opacity: 0.8;
+            margin-top: 5px;
+        }
+
+        #king-score-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: linear-gradient(135deg, rgba(255,215,0,0.2), rgba(255,140,0,0.2));
+            border: 2px solid #ffd700;
+            border-radius: 50px;
+            padding: 8px 24px;
+            margin-top: 12px;
+            font-size: 28px; font-weight: 900;
+            color: #ffd700;
+            box-shadow: 0 0 20px rgba(255,215,0,0.4);
+        }
+
+        #leaderboard {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 280px;
+            background: rgba(0,0,0,0.75);
+            border: 2px solid rgba(255,215,0,0.3);
+            border-radius: 16px;
+            padding: 15px;
+            backdrop-filter: blur(10px);
+        }
+        #leaderboard h3 {
+            font-size: 18px; color: #ffd700;
+            margin-bottom: 10px; text-align: center;
+        }
+        .lb-item {
+            display: flex; align-items: center; gap: 10px;
+            padding: 6px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+        }
+        .lb-item:last-child { border-bottom: none; }
+        .lb-rank { font-size: 18px; min-width: 28px; text-align: center; }
+        .lb-avatar { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; }
+        .lb-name { flex: 1; font-size: 15px; color: #ddd; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .lb-pts { font-size: 17px; font-weight: 900; color: #fff; }
+
+        #empty-state {
+            text-align: center;
+            color: rgba(255,255,255,0.4);
+            font-size: 22px;
+            padding: 30px;
+        }
+
+        #status {
+            position: fixed; top: 10px; left: 10px;
+            font-size: 14px; color: rgba(255,255,255,0.5);
+        }
+
+        /* Flash animation on king change */
+        @keyframes kingFlash {
+            0% { box-shadow: 0 0 40px rgba(255,215,0,0.8), 0 0 80px rgba(255,215,0,0.3); }
+            50% { box-shadow: 0 0 80px rgba(255,255,255,1), 0 0 120px rgba(255,215,0,0.8); }
+            100% { box-shadow: 0 0 40px rgba(255,215,0,0.8), 0 0 80px rgba(255,215,0,0.3); }
+        }
+        .king-change { animation: kingFlash 0.6s ease-in-out 3; }
+    </style>
+</head>
+<body>
+<div id="status">جاري الاتصال...</div>
+
+<!-- Empty state (no one on throne yet) -->
+<div id="empty-state">
+    <div style="font-size: 80px;">👑</div>
+    <p>أرسل هدايا أو تكبيسات<br>لتصبح ملك الشاشة!</p>
+</div>
+
+<!-- King throne (hidden until someone leads) -->
+<div id="king-throne" style="display:none;">
+    <span id="crown">👑</span>
+    <div id="king-glow-ring"></div>
+    <img id="king-avatar" src="" alt="King">
+    <div id="king-name">-</div>
+    <div id="king-title">ملك الشاشة 👑</div>
+    <div id="king-score-badge">
+        <span>⭐</span>
+        <span id="king-score">0</span>
+        <span>نقطة</span>
+    </div>
+</div>
+
+<!-- Leaderboard sidebar -->
+<div id="leaderboard" style="display:none;">
+    <h3>🏆 لوحة الصدارة</h3>
+    <div id="lb-list"></div>
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const username = urlParams.get('user') || localStorage.getItem('tiktokUsername');
+    const isTestMode = urlParams.get('test') === 'true';
+    const socket = io();
+
+    // Points per user: { uniqueId: { nickname, pic, points } }
+    const players = {};
+    let currentKingId = null;
+
+    if (isTestMode) {
+        document.getElementById('status').textContent = '🟢 وضع التجربة 🧪';
+        document.getElementById('status').style.color = '#0f0';
+        let mockPoints = 0;
+        setInterval(() => {
+            mockPoints += Math.floor(Math.random() * 50) + 10;
+            addPoints({
+                uniqueId: 'tester1',
+                nickname: 'بطل التجربة',
+                profilePictureUrl: 'https://ui-avatars.com/api/?name=Test&background=ffd700&color=333'
+            }, mockPoints);
+        }, 2000);
+        setInterval(() => {
+            addPoints({
+                uniqueId: 'tester' + Math.floor(Math.random() * 5),
+                nickname: 'منافس ' + Math.floor(Math.random() * 100),
+                profilePictureUrl: 'https://ui-avatars.com/api/?name=Player&background=random'
+            }, Math.floor(Math.random() * 20) + 5);
+        }, 3000);
+    } else if (username) {
+        socket.emit('connectTikTok', username);
+    }
+    socket.on('tiktokConnected', () => {
+        document.getElementById('status').textContent = '🟢 متصل';
+        setTimeout(() => document.getElementById('status').style.display = 'none', 4000);
+    });
+    socket.on('tiktokError', e => { document.getElementById('status').textContent = '🔴 خطأ: ' + e; });
+
+    socket.on('tiktokLike', (data) => {
+        addPoints(data, data.likeCount || 1);
+    });
+
+    socket.on('tiktokGift', (data) => {
+        if (!data.repeatEnd) return;
+        const pts = (data.diamondCount || 1) * (data.repeatCount || 1) * 10;
+        addPoints(data, pts);
+    });
+
+    socket.on('tiktokShare', (data) => { addPoints(data, 50); });
+    socket.on('tiktokFollow', (data) => { addPoints(data, 30); });
+    socket.on('tiktokSubscribe', (data) => { addPoints(data, 200); });
+
+    function addPoints(data, pts) {
+        const id = data.uniqueId;
+        if (!players[id]) {
+            players[id] = {
+                uniqueId: id,
+                nickname: data.nickname || id,
+                profilePictureUrl: data.profilePictureUrl || '',
+                points: 0
+            };
+        }
+        players[id].points += pts;
+        updateDisplay();
+    }
+
+    function updateDisplay() {
+        const sorted = Object.values(players).sort((a, b) => b.points - a.points);
+        if (sorted.length === 0) return;
+
+        const king = sorted[0];
+        const isNewKing = king.uniqueId !== currentKingId;
+        currentKingId = king.uniqueId;
+
+        // Show throne
+        document.getElementById('empty-state').style.display = 'none';
+        document.getElementById('king-throne').style.display = 'block';
+
+        // Update king info
+        const avatarEl = document.getElementById('king-avatar');
+        avatarEl.src = king.profilePictureUrl || 'https://placehold.co/180x180/ffd700/333?text=👑';
+        document.getElementById('king-name').textContent = king.nickname;
+        document.getElementById('king-score').textContent = king.points.toLocaleString();
+
+        if (isNewKing) {
+            avatarEl.classList.remove('king-change');
+            void avatarEl.offsetWidth; // reflow
+            avatarEl.classList.add('king-change');
+        }
+
+        // Update leaderboard (top 5)
+        const top5 = sorted.slice(0, 5);
+        const lbEl = document.getElementById('leaderboard');
+        const lbList = document.getElementById('lb-list');
+
+        if (top5.length >= 2) {
+            lbEl.style.display = 'block';
+            const ranks = ['🥇', '🥈', '🥉', '4️⃣', '5️⃣'];
+            lbList.innerHTML = top5.map((p, i) => `
+                <div class="lb-item">
+                    <div class="lb-rank">${ranks[i]}</div>
+                    <img class="lb-avatar" src="${p.profilePictureUrl || 'https://placehold.co/36x36/333/fff?text=?'}" onerror="this.src='https://placehold.co/36x36/333/fff?text=?'">
+                    <div class="lb-name">${p.nickname}</div>
+                    <div class="lb-pts">${p.points.toLocaleString()}</div>
+                </div>
+            `).join('');
+        }
+    }
+</script>
+</body>
+</html>

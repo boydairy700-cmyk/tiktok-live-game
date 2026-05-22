@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>سباق الأعلام العالمي 🏁</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@700;900&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: transparent;
+            font-family: 'Cairo', sans-serif;
+            overflow: hidden;
+            color: #fff;
+        }
+
+        #wrapper {
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 20px;
+            background: linear-gradient(180deg, rgba(0,0,0,0.85) 0%, rgba(5,1,20,0.9) 100%);
+        }
+
+        #title-bar {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        #title-bar h1 {
+            font-size: 36px; font-weight: 900;
+            background: linear-gradient(90deg, #ff0055, #00f0ff);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            text-shadow: none;
+        }
+        #title-bar p { color: #ccc; font-size: 18px; margin-top: 5px; }
+
+        #tracks-container {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            max-height: 75vh;
+            overflow-y: auto;
+            padding-right: 5px;
+        }
+        #tracks-container::-webkit-scrollbar { width: 4px; }
+        #tracks-container::-webkit-scrollbar-thumb { background: #444; border-radius: 4px; }
+
+        .track-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 12px;
+            padding: 10px 15px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .track-progress-bg {
+            position: absolute;
+            top: 0; left: 0; bottom: 0;
+            border-radius: 12px;
+            transition: width 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+            opacity: 0.2;
+        }
+
+        .track-rank {
+            font-size: 22px; font-weight: 900;
+            min-width: 36px; text-align: center;
+            position: relative; z-index: 1;
+        }
+
+        .track-flag {
+            font-size: 38px;
+            position: relative; z-index: 1;
+            filter: drop-shadow(0 0 8px rgba(255,255,255,0.3));
+        }
+
+        .track-info {
+            flex: 1;
+            position: relative; z-index: 1;
+        }
+        .track-name {
+            font-size: 20px; font-weight: 900;
+        }
+        .track-count {
+            font-size: 14px; color: #aaa; margin-top: 2px;
+        }
+
+        .track-score {
+            font-size: 28px; font-weight: 900;
+            position: relative; z-index: 1;
+            min-width: 70px; text-align: left;
+        }
+
+        .track-bar-wrap {
+            flex: 2;
+            background: #191b20;
+            border-radius: 8px;
+            height: 48px;
+            position: relative;
+            z-index: 1;
+            overflow: visible;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.8);
+            border-top: 2px dashed rgba(255,255,255,0.08);
+            border-bottom: 2px dashed rgba(255,255,255,0.08);
+        }
+        .track-bar-wrap::before {
+            content: '';
+            position: absolute;
+            left: 0; right: 0; top: 50%;
+            height: 2px;
+            background: rgba(255, 255, 255, 0.15);
+            border-top: 2px dashed rgba(255, 255, 255, 0.3);
+            transform: translateY(-50%);
+        }
+        .track-bar {
+            height: 100%;
+            border-radius: 6px;
+            transition: width 0.5s ease-out;
+            opacity: 0.15;
+            width: 0%;
+        }
+        .track-gift-badge {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 20px;
+            padding: 4px 8px;
+            margin-top: 5px;
+            width: max-content;
+        }
+        .track-gift-badge img {
+            width: 18px;
+            height: 18px;
+            object-fit: contain;
+        }
+        .track-gift-badge .gift-text-info {
+            font-size: 11px;
+            font-weight: bold;
+            color: #ffd700;
+        }
+        .runner-container {
+            position: absolute;
+            top: -12px;
+            transition: right 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            z-index: 5;
+        }
+        .runner-char {
+            font-size: 28px;
+            animation: run-bounce 0.6s infinite ease-in-out;
+            display: inline-block;
+        }
+        @keyframes run-bounce {
+            0% { transform: translateY(0) rotate(-6deg); }
+            50% { transform: translateY(-5px) rotate(6deg); }
+            100% { transform: translateY(0) rotate(-6deg); }
+        }
+        .supporter-avatar {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            border: 2px solid #ffd700;
+            background: #333;
+            overflow: hidden;
+            box-shadow: 0 0 8px rgba(255,215,0,0.6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: -2px;
+            transition: transform 0.2s ease-in-out;
+        }
+        .supporter-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        /* Winner Banner */
+        #winner-banner {
+            display: none;
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.7);
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 999;
+            animation: fadeIn 0.4s ease;
+        }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .winner-card {
+            background: linear-gradient(135deg, #1a0b2e, #0a0515);
+            border: 3px solid #ffd700;
+            border-radius: 24px;
+            padding: 50px 80px;
+            text-align: center;
+            box-shadow: 0 0 80px rgba(255,215,0,0.5);
+        }
+        .winner-card .w-flag { font-size: 100px; }
+        .winner-card .w-title { font-size: 55px; font-weight: 900; color: #ffd700; text-shadow: 0 0 30px #ffd700; }
+        .winner-card .w-name { font-size: 38px; font-weight: 700; color: #fff; margin-top: 10px; }
+        .winner-card .w-score { font-size: 28px; color: #aaa; margin-top: 5px; }
+        .winner-card .w-reset { font-size: 18px; color: #666; margin-top: 20px; }
+
+        #status {
+            position: fixed; top: 10px; left: 10px;
+            font-size: 14px; color: rgba(255,255,255,0.5);
+            z-index: 100;
+        }
+    </style>
+</head>
+<body>
+<div id="status">جاري الاتصال...</div>
+
+<div id="winner-banner">
+    <div class="winner-card">
+        <div class="w-flag" id="w-flag">🏆</div>
+        <div class="w-title">الفائز!</div>
+        <div class="w-name" id="w-name">-</div>
+        <div class="w-score" id="w-score">0 نقطة</div>
+        <div class="w-reset" id="w-reset-timer">سيبدأ سباق جديد خلال 10 ثوانٍ...</div>
+    </div>
+</div>
+
+<div id="wrapper">
+    <div id="title-bar">
+        <h1>🏁 سباق الأعلام العالمي 🏁</h1>
+        <p>اكتب اسم دولتك في التعليقات للتصويت!</p>
+    </div>
+    <div id="tracks-container"></div>
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+    // ========== COUNTRIES DATABASE ==========
+    const COUNTRIES = [
+        { name: 'السعودية',   aliases: ['سعودية','ksa','saudi'],          code: 'sa', color: '#006c35', runner: '🏇', gift: 'rose' },
+        { name: 'الإمارات',  aliases: ['امارات','uae','emirates'],        code: 'ae', color: '#00732f', runner: '🏎️', gift: 'finger_heart' },
+        { name: 'مصر',       aliases: ['egypt','مصري'],                   code: 'eg', color: '#ce1126', runner: '🦅', gift: 'cap' },
+        { name: 'العراق',    aliases: ['عراق','iraq','عراقي'],            code: 'iq', color: '#007a3d', runner: '🦁', gift: 'perfume' },
+        { name: 'الكويت',    aliases: ['كويت','kuwait'],                   code: 'kw', color: '#007a3d', runner: '🐪', gift: 'lion' },
+        { name: 'قطر',       aliases: ['qatar'],                           code: 'qa', color: '#8d1b3d', runner: '🏆', gift: 'rose' },
+        { name: 'البحرين',   aliases: ['بحرين','bahrain'],                 code: 'bh', color: '#ce1126', runner: '🐎', gift: 'finger_heart' },
+        { name: 'عُمان',     aliases: ['عمان','oman'],                     code: 'om', color: '#db161b', runner: '⚔️', gift: 'cap' },
+        { name: 'اليمن',     aliases: ['يمن','yemen'],                     code: 'ye', color: '#ce1126', runner: '🦅', gift: 'perfume' },
+        { name: 'الأردن',    aliases: ['اردن','jordan'],                   code: 'jo', color: '#007a3d', runner: '🐎', gift: 'lion' },
+        { name: 'سوريا',     aliases: ['syria','سوري'],                    code: 'sy', color: '#007a3d', runner: '🐆', gift: 'rose' },
+        { name: 'لبنان',     aliases: ['lebanon','لبناني'],                code: 'lb', color: '#ce1126', runner: '🌲', gift: 'finger_heart' },
+        { name: 'فلسطين',   aliases: ['palestine','فلسطيني'],             code: 'ps', color: '#007a3d', runner: '🕊️', gift: 'cap' },
+        { name: 'المغرب',    aliases: ['morocco','مغربي'],                 code: 'ma', color: '#c1272d', runner: '🦁', gift: 'perfume' },
+        { name: 'الجزائر',   aliases: ['algeria','جزائري'],               code: 'dz', color: '#006233', runner: '🦊', gift: 'lion' },
+        { name: 'تونس',      aliases: ['tunisia','تونسي'],                 code: 'tn', color: '#e70013', runner: '🦅', gift: 'rose' },
+        { name: 'ليبيا',     aliases: ['libya','ليبي'],                    code: 'ly', color: '#000000', runner: '🐎', gift: 'finger_heart' },
+        { name: 'السودان',   aliases: ['sudan','سوداني'],                  code: 'sd', color: '#d21034', runner: '🦅', gift: 'cap' },
+        { name: 'الصومال',   aliases: ['somalia','صومالي'],               code: 'so', color: '#4189dd', runner: '🐆', gift: 'perfume' },
+        { name: 'موريتانيا', aliases: ['mauritania','موريتاني'],           code: 'mr', color: '#006233', runner: '🐫', gift: 'lion' },
+        { name: 'تركيا',     aliases: ['turkey','تركي'],                   code: 'tr', color: '#e30a17', runner: '🐺', gift: 'rose' },
+        { name: 'باكستان',   aliases: ['pakistan','باكستاني'],             code: 'pk', color: '#01411c', runner: '🐆', gift: 'finger_heart' },
+        { name: 'المملكة المتحدة', aliases: ['uk','england','بريطانيا'],   code: 'gb', color: '#012169', runner: '🦁', gift: 'cap' },
+        { name: 'أمريكا',    aliases: ['usa','america','امريكا'],          code: 'us', color: '#b22234', runner: '🦅', gift: 'perfume' },
+    ];
+
+    // Gift Info database
+    const GIFTS = {
+        rose: { name: 'وردة', image: '/assets/rose.png', boost: 15 },
+        finger_heart: { name: 'قلب', image: '/assets/finger_heart.png', boost: 80 },
+        cap: { name: 'قبعة', image: '/assets/cap.png', boost: 1600 },
+        perfume: { name: 'عطر', image: '/assets/perfume.png', boost: 3500 },
+        lion: { name: 'أسد', image: '/assets/lion.png', boost: 500000 }
+    };
+
+    // Helper to map TikTok gift name to internal gift key
+    function getGiftKey(giftName) {
+        if (!giftName) return null;
+        const name = giftName.toLowerCase().replace(/\s+/g, '');
+        if (name.includes('rose')) return 'rose';
+        if (name.includes('heart') || name.includes('love')) return 'finger_heart';
+        if (name.includes('cap') || name.includes('hat')) return 'cap';
+        if (name.includes('perfume') || name.includes('scent')) return 'perfume';
+        if (name.includes('lion')) return 'lion';
+        return null;
+    }
+
+    // scores keyed by country name
+    const scores = {};
+    COUNTRIES.forEach(c => scores[c.name] = 0);
+
+    const lastSupporterPic = {}; // keyed by country name: { name: 'username', pic: 'url' }
+
+    const WIN_SCORE = 200;
+    let isGameOver = false;
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const username = urlParams.get('user') || localStorage.getItem('tiktokUsername');
+    const isTestMode = urlParams.get('test') === 'true';
+    const socket = io();
+    const statusEl = document.getElementById('status');
+
+    let userCountry = {}; // Track which user supports which country
+
+    if (isTestMode) {
+        statusEl.textContent = '🟢 متصل (وضع التجربة 🧪)';
+        statusEl.style.background = 'rgba(0, 255, 0, 0.2)';
+        statusEl.style.color = '#0f0';
+
+        // Simulate comments (joining)
+        setInterval(() => {
+            if(isGameOver) return;
+            const randomCountry = COUNTRIES[Math.floor(Math.random() * COUNTRIES.length)];
+            const randomUser = 'TestUser_' + Math.floor(Math.random() * 1000);
+            
+            if (!userCountry[randomUser]) {
+                userCountry[randomUser] = randomCountry.name;
+                scores[randomCountry.name] += 5;
+                
+                // Update avatar in state
+                lastSupporterPic[randomCountry.name] = {
+                    name: randomUser,
+                    pic: `https://ui-avatars.com/api/?name=${randomUser}&background=random`
+                };
+                
+                checkWinner(randomCountry.name);
+                renderTracks();
+            }
+        }, 2000);
+
+        // Simulate gifts
+        setInterval(() => {
+            if(isGameOver) return;
+            const activeCountries = COUNTRIES.filter(c => scores[c.name] > 0);
+            if (activeCountries.length > 0) {
+                const randomCountry = activeCountries[Math.floor(Math.random() * activeCountries.length)];
+                
+                // 70% chance to simulate a matching gift, 30% standard boost
+                const useMatching = Math.random() > 0.3;
+                let points = 0;
+                
+                if (useMatching) {
+                    const giftKey = randomCountry.gift;
+                    points = GIFTS[giftKey].boost;
+                } else {
+                    points = Math.floor(Math.random() * 50) + 10;
+                }
+                
+                scores[randomCountry.name] += points;
+                
+                const randomUser = 'Gifter_' + Math.floor(Math.random() * 1000);
+                lastSupporterPic[randomCountry.name] = {
+                    name: randomUser,
+                    pic: `https://ui-avatars.com/api/?name=${randomUser}&background=random&color=fff&background=00f0ff`
+                };
+                
+                checkWinner(randomCountry.name);
+                renderTracks();
+            }
+        }, 3000);
+    } else if (username) {
+        socket.emit('connectTikTok', username);
+    }
+
+    socket.on('tiktokConnected', () => {
+        statusEl.textContent = '🟢 متصل | اكتب اسم دولتك!';
+        setTimeout(() => statusEl.style.display = 'none', 5000);
+    });
+    socket.on('tiktokError', e => { statusEl.textContent = '🔴 خطأ: ' + e; });
+
+    socket.on('tiktokChat', (data) => {
+        if (isGameOver || isTestMode) return;
+        const text = data.comment.toLowerCase().trim();
+        
+        let foundCountry = null;
+        for (let c of COUNTRIES) {
+            const allNames = [c.name.toLowerCase(), ...c.aliases.map(a => a.toLowerCase())];
+            if (allNames.some(n => text.includes(n))) {
+                foundCountry = c;
+                break;
+            }
+        }
+        
+        if (foundCountry) {
+            userCountry[data.uniqueId] = foundCountry.name;
+            scores[foundCountry.name] += 2; // Boost for joining
+            
+            lastSupporterPic[foundCountry.name] = {
+                name: data.uniqueId,
+                pic: data.profilePictureUrl
+            };
+            
+            checkWinner(foundCountry.name);
+            renderTracks();
+        }
+    });
+
+    socket.on('tiktokGift', (data) => {
+        if (isGameOver || isTestMode) return;
+        
+        const giftKey = getGiftKey(data.giftName);
+        let targetCountry = null;
+        
+        if (giftKey) {
+            // First check if user is already supporting a country that matches this gift
+            const userSupportedCountry = userCountry[data.uniqueId];
+            if (userSupportedCountry) {
+                const currentCountry = COUNTRIES.find(c => c.name === userSupportedCountry);
+                if (currentCountry && currentCountry.gift === giftKey) {
+                    targetCountry = currentCountry;
+                }
+            }
+            
+            // If they don't support a country yet, or their current country doesn't match this gift,
+            // join them to the first country that accepts this support gift
+            if (!targetCountry) {
+                const matchingCountries = COUNTRIES.filter(c => c.gift === giftKey);
+                if (matchingCountries.length > 0) {
+                    targetCountry = matchingCountries[0];
+                    userCountry[data.uniqueId] = targetCountry.name;
+                }
+            }
+        } else {
+            // Generic non-matching gift, boost their current country if any
+            const userSupportedCountry = userCountry[data.uniqueId];
+            if (userSupportedCountry) {
+                targetCountry = COUNTRIES.find(c => c.name === userSupportedCountry);
+            }
+        }
+        
+        if (targetCountry) {
+            let points = data.diamondCount * 5;
+            if (giftKey && targetCountry.gift === giftKey) {
+                points = GIFTS[giftKey].boost * (data.repeatCount || 1);
+            }
+            scores[targetCountry.name] += points;
+            
+            lastSupporterPic[targetCountry.name] = {
+                name: data.uniqueId,
+                pic: data.profilePictureUrl
+            };
+            
+            checkWinner(targetCountry.name);
+            renderTracks();
+        } else {
+            // Random boost if user hasn't joined any country and sent a generic gift
+            const activeCountries = COUNTRIES.filter(c => scores[c.name] > 0);
+            if (activeCountries.length > 0) {
+                const lucky = activeCountries[Math.floor(Math.random() * activeCountries.length)];
+                scores[lucky.name] += Math.max(1, Math.floor(data.diamondCount));
+                checkWinner(lucky.name);
+                renderTracks();
+            }
+        }
+    });
+
+    function checkWinner(countryName) {
+        if (scores[countryName] >= WIN_SCORE) {
+            isGameOver = true;
+            const country = COUNTRIES.find(c => c.name === countryName);
+            showWinner(country, scores[countryName]);
+        }
+    }
+
+    function showWinner(country, score) {
+        document.getElementById('w-flag').innerHTML = `<img src="https://flagcdn.com/w160/${country.code}.png" style="width:120px; border-radius:10px; box-shadow:0 0 20px rgba(0,0,0,0.5);" alt="${country.name}">`;
+        document.getElementById('w-name').textContent = country.name;
+        document.getElementById('w-score').textContent = score + ' نقطة';
+        document.getElementById('winner-banner').style.display = 'flex';
+
+        let countdown = 10;
+        const timer = setInterval(() => {
+            countdown--;
+            document.getElementById('w-reset-timer').textContent = `سيبدأ سباق جديد خلال ${countdown} ثوانٍ...`;
+            if (countdown <= 0) {
+                clearInterval(timer);
+                resetGame();
+            }
+        }, 1000);
+    }
+
+    function resetGame() {
+        COUNTRIES.forEach(c => scores[c.name] = 0);
+        isGameOver = false;
+        document.getElementById('winner-banner').style.display = 'none';
+        renderTracks();
+    }
+
+    function renderTracks() {
+        const container = document.getElementById('tracks-container');
+        
+        // Sort by score, show only countries with score > 0, or top 15 if none active
+        const activeCountries = COUNTRIES.filter(c => scores[c.name] > 0);
+        const toShow = activeCountries.length >= 1 
+            ? [...activeCountries].sort((a,b) => scores[b.name] - scores[a.name]).slice(0, 12)
+            : COUNTRIES.slice(0, 10);
+
+        const maxScore = Math.max(1, ...toShow.map(c => scores[c.name]));
+
+        container.innerHTML = '';
+        toShow.forEach((country, idx) => {
+            const score = scores[country.name];
+            const pct = Math.min(100, (score / WIN_SCORE) * 100);
+            const barPct = Math.min(100, (score / maxScore) * 100);
+
+            const rankEmoji = idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `${idx + 1}`;
+            const giftInfo = GIFTS[country.gift];
+
+            // Get supporter pic if exists
+            const supporter = lastSupporterPic[country.name];
+            let supporterHtml = '';
+            if (supporter) {
+                supporterHtml = `
+                    <div class="supporter-avatar">
+                        <img src="${supporter.pic}" alt="${supporter.name}">
+                    </div>
+                `;
+            }
+
+            const row = document.createElement('div');
+            row.className = 'track-row';
+            row.innerHTML = `
+                <div class="track-progress-bg" style="width: ${pct}%; background: ${country.color};"></div>
+                <div class="track-rank">${rankEmoji}</div>
+                <div class="track-flag"><img src="https://flagcdn.com/w80/${country.code}.png" style="width:45px; border-radius:4px; box-shadow: 0 0 10px rgba(0,0,0,0.5);" alt="${country.name}"></div>
+                <div class="track-info">
+                    <div class="track-name">${country.name}</div>
+                    <div class="track-gift-badge">
+                        <img src="${giftInfo.image}" alt="${giftInfo.name}">
+                        <span class="gift-text-info">أرسل ${giftInfo.name} للمساندة (+${giftInfo.boost})</span>
+                    </div>
+                </div>
+                <div class="track-bar-wrap">
+                    <div class="track-bar" style="width: ${barPct}%; background: ${country.color};"></div>
+                    <div class="runner-container" style="right: calc(${barPct}% - 14px);">
+                        ${supporterHtml}
+                        <div class="runner-char">${country.runner}</div>
+                    </div>
+                </div>
+                <div class="track-score">${score}</div>
+            `;
+            container.appendChild(row);
+        });
+
+        // Show hint if nothing is happening
+        if (activeCountries.length === 0) {
+            const hint = document.createElement('div');
+            hint.style.cssText = 'text-align:center; color:#666; padding:20px; font-size:20px;';
+            hint.textContent = '⏳ انتظر تعليقات من المشاهدين...';
+            container.appendChild(hint);
+        }
+    }
+
+    // Initial render
+    renderTracks();
+</script>
+</body>
+</html>

@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>تنبيهات الشاشة | Screen Alerts</title>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@700;900&display=swap" rel="stylesheet">
+<style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+        background: transparent;
+        font-family: 'Cairo', sans-serif;
+        overflow: hidden;
+        width: 100vw; height: 100vh;
+        pointer-events: none;
+    }
+
+    #alerts-container {
+        position: fixed;
+        bottom: 30px; right: 30px;
+        width: 480px;
+        display: flex; flex-direction: column-reverse;
+        gap: 12px; z-index: 9999;
+    }
+
+    .alert-card {
+        display: flex; align-items: center;
+        gap: 15px; padding: 15px 20px;
+        border-radius: 16px; border: 2px solid;
+        backdrop-filter: blur(20px);
+        animation: slideInRight 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        position: relative; overflow: hidden;
+    }
+    .alert-card::before {
+        content: ''; position: absolute;
+        top: 0; left: -100%; width: 100%; height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+        animation: shimmer 1.5s ease-in-out infinite;
+    }
+    @keyframes shimmer { to { left: 100%; } }
+
+    .alert-gift     { background: rgba(255,140,0,0.15); border-color: #ff8c00; box-shadow: 0 0 30px rgba(255,140,0,0.4); }
+    .alert-like     { background: rgba(255,0,85,0.15);  border-color: #ff0055; box-shadow: 0 0 30px rgba(255,0,85,0.4); }
+    .alert-follow   { background: rgba(0,240,255,0.15); border-color: #00f0ff; box-shadow: 0 0 30px rgba(0,240,255,0.4); }
+    .alert-subscribe{ background: rgba(176,38,255,0.15);border-color: #b026ff; box-shadow: 0 0 30px rgba(176,38,255,0.5); }
+    .alert-share    { background: rgba(0,255,136,0.15); border-color: #00ff88; box-shadow: 0 0 30px rgba(0,255,136,0.4); }
+    .alert-milestone{ background: rgba(255,215,0,0.15); border-color: #ffd700; box-shadow: 0 0 40px rgba(255,215,0,0.6); }
+
+    .alert-avatar   { width: 60px; height: 60px; border-radius: 50%; border: 3px solid currentColor; object-fit: cover; flex-shrink: 0; }
+    .alert-text     { flex: 1; }
+    .alert-text .name   { font-size: 20px; font-weight: 900; color: #fff; text-shadow: 0 0 10px rgba(255,255,255,0.5); }
+    .alert-text .action { font-size: 16px; font-weight: 700; opacity: 0.9; margin-top: 3px; }
+    .alert-gift .alert-text .action     { color: #ff8c00; }
+    .alert-follow .alert-text .action   { color: #00f0ff; }
+    .alert-subscribe .alert-text .action{ color: #b026ff; }
+    .alert-share .alert-text .action    { color: #00ff88; }
+    .alert-milestone .alert-text .action{ color: #ffd700; }
+    .alert-count { font-size: 28px; font-weight: 900; color: #fff; text-shadow: 0 0 15px currentColor; }
+
+    .alert-progress {
+        position: absolute; bottom: 0; left: 0; height: 4px;
+        animation: progressBar 5s linear forwards; opacity: 0.7;
+    }
+    @keyframes progressBar { from { width: 100%; } to { width: 0%; } }
+    @keyframes slideInRight { from { transform: translateX(120%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+    @keyframes slideOutRight { from { transform: translateX(0); opacity: 1; } to { transform: translateX(120%); opacity: 0; } }
+    .alert-card.removing { animation: slideOutRight 0.4s ease-in forwards; }
+
+    /* Milestone big banner */
+    .milestone-banner {
+        position: fixed; top: 50%; left: 50%;
+        transform: translate(-50%, -50%) scale(0);
+        z-index: 99999; text-align: center;
+        animation: milestoneIn 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    }
+    .milestone-banner.removing { animation: milestoneOut 0.4s ease-in forwards; }
+    @keyframes milestoneIn  { to { transform: translate(-50%, -50%) scale(1); } }
+    @keyframes milestoneOut { to { transform: translate(-50%, -50%) scale(0); } }
+    .milestone-content { background: linear-gradient(135deg, rgba(0,0,0,0.9), rgba(20,0,40,0.95)); border: 3px solid #ffd700; border-radius: 24px; padding: 40px 60px; box-shadow: 0 0 80px rgba(255,215,0,0.6); }
+    .milestone-emoji  { font-size: 80px; }
+    .milestone-title  { font-size: 50px; font-weight: 900; color: #ffd700; text-shadow: 0 0 30px #ffd700; }
+    .milestone-sub    { font-size: 28px; font-weight: 700; color: #fff; margin-top: 10px; }
+    .milestone-name   { font-size: 36px; font-weight: 900; color: #00f0ff; text-shadow: 0 0 20px #00f0ff; }
+    .confetti-container { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 99998; }
+
+    #status-bar { position: fixed; top: 10px; left: 10px; color: rgba(255,255,255,0.6); font-size: 14px; font-family: 'Cairo', sans-serif; pointer-events: none; }
+
+    /* ===== MANUAL CONTROL PANEL ===== */
+    #ctrl-panel {
+        position: fixed; bottom: 20px; left: 20px;
+        background: rgba(10,10,25,0.95);
+        border: 2px solid #b026ff;
+        border-radius: 16px; padding: 16px;
+        z-index: 99999; width: 260px;
+        backdrop-filter: blur(15px);
+        box-shadow: 0 0 30px rgba(176,38,255,0.4);
+        transition: transform 0.3s ease;
+        pointer-events: all;
+    }
+    #ctrl-panel.hidden { transform: translateX(-290px); }
+    #ctrl-toggle {
+        position: fixed; bottom: 20px; left: 20px;
+        background: linear-gradient(135deg, #b026ff, #ff0080);
+        border: none; color: #fff;
+        font-size: 22px; width: 50px; height: 50px;
+        border-radius: 50%; cursor: pointer; z-index: 100000;
+        pointer-events: all;
+        box-shadow: 0 0 20px rgba(176,38,255,0.6);
+        display: flex; align-items: center; justify-content: center;
+        transition: 0.2s;
+    }
+    #ctrl-toggle:hover { transform: scale(1.1); }
+    .ctrl-title {
+        font-size: 15px; font-weight: 900; color: #b026ff;
+        margin-bottom: 12px; padding-bottom: 8px;
+        border-bottom: 1px solid rgba(176,38,255,0.3);
+        text-align: center;
+    }
+    .ctrl-btn {
+        display: block; width: 100%;
+        padding: 9px 12px; margin-bottom: 7px;
+        border-radius: 10px; border: 1px solid rgba(255,255,255,0.15);
+        color: #fff; font-family: 'Cairo', sans-serif;
+        font-size: 14px; font-weight: 700;
+        cursor: pointer; text-align: right;
+        transition: 0.2s; pointer-events: all;
+    }
+    .ctrl-btn:hover { transform: scale(1.02); filter: brightness(1.2); }
+    .ctrl-btn:active { transform: scale(0.98); }
+    .btn-gift     { background: rgba(255,140,0,0.25);  }
+    .btn-follow   { background: rgba(0,240,255,0.2);  }
+    .btn-share    { background: rgba(0,255,136,0.2);  }
+    .btn-subscribe{ background: rgba(176,38,255,0.25); }
+    .btn-milestone{ background: rgba(255,215,0,0.2);  }
+    .btn-test     { background: rgba(255,255,255,0.1); }
+    .ctrl-sep { border: none; border-top: 1px solid rgba(255,255,255,0.1); margin: 8px 0; }
+</style>
+</head>
+<body>
+
+<div id="status-bar">التنبيهات جاهزة ✅</div>
+
+<!-- VIDEO ALERT CONTAINER -->
+<div id="video-alert-container" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; z-index:999999; align-items:center; justify-content:center; flex-direction:column; background:rgba(0,0,0,0.5);">
+    <video id="video-alert-player" src="" style="max-width:800px; max-height:600px; border-radius:20px; box-shadow:0 0 50px var(--neon-cyan);" autoplay></video>
+    <div id="video-alert-text" style="margin-top:20px; font-size:50px; font-weight:900; color:#fff; text-shadow:0 0 20px var(--neon-cyan); text-align:center; font-family:'Cairo';"></div>
+</div>
+
+<!-- SETTINGS MODAL -->
+<div id="settings-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:9999999; align-items:center; justify-content:center; font-family:'Cairo'; pointer-events:all;">
+    <div style="background:#141423; padding:30px; border-radius:20px; width:500px; max-width:90%; border:1px solid rgba(255,255,255,0.1); box-shadow:0 10px 40px rgba(0,0,0,0.5); color:#fff;">
+        <h2 style="margin-bottom:20px; color:#00f0ff; text-align:center;">⚙️ إعدادات تنبيهات الفيديو</h2>
+        <p style="margin-bottom:20px; font-size:14px; color:#ccc; text-align:center;">قم بإعداد فيديوهات مخصصة للعمل كدونيشن بكامل الشاشة</p>
+        
+        <div style="margin-bottom:15px;">
+            <label style="display:block; margin-bottom:5px; font-weight:bold; color:#b026ff;">تنبيه الاشتراك (Subscribe)</label>
+            <select id="set-sub-type" style="width:100%; padding:10px; background:rgba(0,0,0,0.3); color:#fff; border:1px solid #555; border-radius:8px; margin-bottom:10px;">
+                <option value="default">التنبيه العادي (جانبي)</option>
+                <option value="video">فيديو مخصص (دونيشن)</option>
+            </select>
+            <input type="text" id="set-sub-url" placeholder="رابط الفيديو (.mp4, .webm)" style="width:100%; padding:10px; background:rgba(0,0,0,0.3); color:#fff; border:1px solid #555; border-radius:8px; margin-bottom:10px;">
+            <input type="text" id="set-sub-msg" placeholder="الرسالة (استخدم {name} لاسم الشخص)" style="width:100%; padding:10px; background:rgba(0,0,0,0.3); color:#fff; border:1px solid #555; border-radius:8px; margin-bottom:10px;">
+        </div>
+
+        <div style="margin-bottom:15px;">
+            <label style="display:block; margin-bottom:5px; font-weight:bold; color:#ff8c00;">تنبيه الهدايا الكبيرة (أكثر من 1000 عملة)</label>
+            <select id="set-gift-type" style="width:100%; padding:10px; background:rgba(0,0,0,0.3); color:#fff; border:1px solid #555; border-radius:8px; margin-bottom:10px;">
+                <option value="default">التنبيه العادي (جانبي)</option>
+                <option value="video">فيديو مخصص (دونيشن)</option>
+            </select>
+            <input type="text" id="set-gift-url" placeholder="رابط الفيديو (.mp4, .webm)" style="width:100%; padding:10px; background:rgba(0,0,0,0.3); color:#fff; border:1px solid #555; border-radius:8px; margin-bottom:10px;">
+            <input type="text" id="set-gift-msg" placeholder="الرسالة (استخدم {name} لاسم الشخص)" style="width:100%; padding:10px; background:rgba(0,0,0,0.3); color:#fff; border:1px solid #555; border-radius:8px; margin-bottom:10px;">
+        </div>
+
+        <div style="display:flex; justify-content:space-between; margin-top:20px;">
+            <button onclick="saveSettings()" style="background:#00ff88; color:#000; border:none; padding:10px 20px; border-radius:8px; font-weight:bold; cursor:pointer;">💾 حفظ الإعدادات</button>
+            <button onclick="document.getElementById('settings-modal').style.display='none'" style="background:transparent; color:#ccc; border:none; padding:10px; cursor:pointer;">إلغاء</button>
+        </div>
+    </div>
+</div>
+
+<div id="alerts-container"></div>
+<div class="confetti-container" id="confetti-container"></div>
+
+<!-- MANUAL CONTROL PANEL -->
+<div id="ctrl-panel" class="hidden">
+    <div class="ctrl-title">🎛️ تحكم يدوي بالتنبيهات</div>
+    <button class="ctrl-btn btn-gift"      onclick="manualAlert('gift')">🎁 هدية وهمية (وردة)</button>
+    <button class="ctrl-btn btn-gift"      onclick="manualAlert('gift-big')">🦁 هدية كبيرة (أسد)</button>
+    <button class="ctrl-btn btn-follow"    onclick="manualAlert('follow')">➕ متابع جديد</button>
+    <button class="ctrl-btn btn-share"     onclick="manualAlert('share')">🔗 شير البث</button>
+    <button class="ctrl-btn btn-subscribe" onclick="manualAlert('subscribe')">⭐ اشتراك عضوية</button>
+    <hr class="ctrl-sep">
+    <button class="ctrl-btn btn-milestone" onclick="manualAlert('milestone-1k')">🏆 مبروك 1000 تكبيسة</button>
+    <button class="ctrl-btn btn-milestone" onclick="manualAlert('milestone-5k')">🏆 مبروك 5000 تكبيسة</button>
+    <hr class="ctrl-sep">
+    <button class="ctrl-btn btn-test"      onclick="startAutoTest()">▶️ تشغيل تجربة تلقائية</button>
+</div>
+
+<button id="settings-toggle" onclick="toggleSettings()" title="الإعدادات" style="position: fixed; bottom: 80px; left: 20px; background: linear-gradient(135deg, #00f2fe, #4facfe); border: none; color: #fff; font-size: 22px; width: 50px; height: 50px; border-radius: 50%; cursor: pointer; z-index: 100000; box-shadow: 0 0 20px rgba(0,242,254,0.6); display: flex; align-items: center; justify-content: center; transition: 0.2s; pointer-events: all;">⚙️</button>
+
+<button id="ctrl-toggle" onclick="toggleCtrl()" title="لوحة التحكم">🎛️</button>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+const urlParams = new URLSearchParams(window.location.search);
+const username = urlParams.get('user') || localStorage.getItem('tiktokUsername');
+const isTestMode = urlParams.get('test') === 'true';
+
+let isVideoPlaying = false;
+let videoQueue = [];
+
+function loadSettings() {
+    document.getElementById('set-sub-type').value = localStorage.getItem('alert_sub_type') || 'default';
+    document.getElementById('set-sub-url').value = localStorage.getItem('alert_sub_url') || '';
+    document.getElementById('set-sub-msg').value = localStorage.getItem('alert_sub_msg') || '{name} اشترك في العضوية!';
+    
+    document.getElementById('set-gift-type').value = localStorage.getItem('alert_gift_type') || 'default';
+    document.getElementById('set-gift-url').value = localStorage.getItem('alert_gift_url') || '';
+    document.getElementById('set-gift-msg').value = localStorage.getItem('alert_gift_msg') || '{name} أرسل هدية أسطورية!';
+}
+function saveSettings() {
+    localStorage.setItem('alert_sub_type', document.getElementById('set-sub-type').value);
+    localStorage.setItem('alert_sub_url', document.getElementById('set-sub-url').value);
+    localStorage.setItem('alert_sub_msg', document.getElementById('set-sub-msg').value);
+    
+    localStorage.setItem('alert_gift_type', document.getElementById('set-gift-type').value);
+    localStorage.setItem('alert_gift_url', document.getElementById('set-gift-url').value);
+    localStorage.setItem('alert_gift_msg', document.getElementById('set-gift-msg').value);
+    
+    document.getElementById('settings-modal').style.display='none';
+    alert('تم حفظ الإعدادات بنجاح!');
+}
+function toggleSettings() {
+    loadSettings();
+    document.getElementById('settings-modal').style.display = 'flex';
+}
+
+function playVideoAlert(url, message, color) {
+    if (isVideoPlaying) {
+        videoQueue.push({url, message, color});
+        return;
+    }
+    isVideoPlaying = true;
+    const container = document.getElementById('video-alert-container');
+    const player = document.getElementById('video-alert-player');
+    const text = document.getElementById('video-alert-text');
+    
+    player.src = url;
+    text.innerHTML = message;
+    text.style.color = color || '#fff';
+    text.style.textShadow = `0 0 20px ${color || '#00f0ff'}`;
+    
+    container.style.display = 'flex';
+    player.play().catch(e => {
+        console.error("Video play failed:", e);
+        setTimeout(endVideoAlert, 3000);
+    });
+    
+    player.onended = () => {
+        endVideoAlert();
+    };
+}
+function endVideoAlert() {
+    const container = document.getElementById('video-alert-container');
+    const player = document.getElementById('video-alert-player');
+    container.style.display = 'none';
+    player.src = '';
+    isVideoPlaying = false;
+    if (videoQueue.length > 0) {
+        const next = videoQueue.shift();
+        playVideoAlert(next.url, next.message, next.color);
+    }
+}
+
+const socket = io();
+const statusEl = document.getElementById('status-bar');
+
+let totalLikes = 0;
+const likeCounters = {};
+const milestones = [100, 500, 1000, 2000, 5000, 10000];
+let autoTestRunning = false;
+
+// ===== PANEL TOGGLE =====
+let panelOpen = false;
+function toggleCtrl() {
+    panelOpen = !panelOpen;
+    const panel = document.getElementById('ctrl-panel');
+    const btn   = document.getElementById('ctrl-toggle');
+    if (panelOpen) {
+        panel.classList.remove('hidden');
+        panel.style.left = '80px';
+        btn.style.left = '20px';
+    } else {
+        panel.classList.add('hidden');
+    }
+}
+
+// ===== MANUAL ALERTS =====
+const fakeUsers = [
+    { nickname: 'أبو الوليد', profilePictureUrl: 'https://ui-avatars.com/api/?name=AB&background=e30a17&color=fff' },
+    { nickname: 'نورة العتيبي', profilePictureUrl: 'https://ui-avatars.com/api/?name=NO&background=b026ff&color=fff' },
+    { nickname: 'سعود الغامدي', profilePictureUrl: 'https://ui-avatars.com/api/?name=SA&background=00f0ff&color=000' },
+    { nickname: 'ريم الشهراني', profilePictureUrl: 'https://ui-avatars.com/api/?name=RI&background=ffd700&color=000' },
+];
+function rnd(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+
+function manualAlert(type) {
+    const user = rnd(fakeUsers);
+    switch(type) {
+        case 'gift':
+            showAlert('gift', user, '🎁 وردة × 1', '💎 1'); break;
+        case 'gift-big':
+            showAlert('gift', {...user, nickname: user.nickname}, '🦁 أسد × 10', '💎 1000'); break;
+        case 'follow':
+            showAlert('follow', user, '➕ متابع جديد!', ''); break;
+        case 'share':
+            showAlert('share', user, '🔗 شارك البث!', ''); break;
+        case 'subscribe':
+            showAlert('subscribe', user, '⭐ اشترك في عضوية!', ''); break;
+        case 'milestone-1k':
+            showMilestone(user, 1000); break;
+        case 'milestone-5k':
+            showMilestone(user, 5000); break;
+    }
+}
+
+function startAutoTest() {
+    if (autoTestRunning) return;
+    autoTestRunning = true;
+    statusEl.textContent = '🟢 وضع التجربة التلقائية 🧪';
+    statusEl.style.color = '#00ff88';
+    const types = ['gift', 'gift-big', 'follow', 'share', 'subscribe'];
+    setInterval(() => manualAlert(rnd(types)), 3500);
+}
+
+// ===== TEST MODE AUTO =====
+if (isTestMode) {
+    statusEl.textContent = '🟢 وضع التجربة 🧪';
+    statusEl.style.color = '#00ff88';
+    startAutoTest();
+} else if (username) {
+    socket.emit('connectTikTok', username);
+}
+
+socket.on('tiktokConnected', () => {
+    statusEl.textContent = '🟢 متصل بـ @' + username;
+    setTimeout(() => statusEl.style.opacity = '0', 5000);
+});
+socket.on('tiktokError', (msg) => {
+    statusEl.textContent = '🔴 ' + (msg || 'خطأ');
+    statusEl.style.color = '#e30a17';
+});
+
+socket.on('tiktokGift', (data) => {
+    if (!data.repeatEnd) return;
+    const diamonds = (data.diamondCount || 1) * (data.repeatCount || 1);
+    
+    const type = localStorage.getItem('alert_gift_type');
+    if (diamonds >= 1000 && type === 'video') {
+        const url = localStorage.getItem('alert_gift_url');
+        const msg = (localStorage.getItem('alert_gift_msg') || '{name} أرسل هدية!').replace('{name}', data.nickname || data.uniqueId);
+        playVideoAlert(url, msg, '#ff8c00');
+    } else {
+        showAlert('gift', data, `🎁 ${data.giftName} × ${data.repeatCount || 1}`, diamonds > 0 ? `💎 ${diamonds}` : '');
+    }
+});
+socket.on('tiktokFollow',    (data) => showAlert('follow',    data, '➕ متابع جديد!', ''));
+socket.on('tiktokShare',     (data) => showAlert('share',     data, '🔗 شارك البث!', ''));
+
+socket.on('tiktokSubscribe', (data) => {
+    const type = localStorage.getItem('alert_sub_type');
+    if (type === 'video') {
+        const url = localStorage.getItem('alert_sub_url');
+        const msg = (localStorage.getItem('alert_sub_msg') || '{name} اشترك!').replace('{name}', data.nickname || data.uniqueId);
+        playVideoAlert(url, msg, '#b026ff');
+    } else {
+        showAlert('subscribe', data, '⭐ اشترك في عضوية!', '');
+    }
+});
+
+socket.on('tiktokLike', (data) => {
+    if (!likeCounters[data.uniqueId]) likeCounters[data.uniqueId] = 0;
+    const prev = likeCounters[data.uniqueId];
+    likeCounters[data.uniqueId] += data.likeCount || 0;
+    const curr = likeCounters[data.uniqueId];
+    milestones.forEach(m => { if (prev < m && curr >= m) showMilestone(data, m); });
+});
+
+// ===== ALERT UI =====
+const colorMap = { gift: '#ff8c00', like: '#ff0055', follow: '#00f0ff', subscribe: '#b026ff', share: '#00ff88', milestone: '#ffd700' };
+
+function showAlert(type, data, action, count) {
+    const container = document.getElementById('alerts-container');
+    const card = document.createElement('div');
+    card.className = `alert-card alert-${type}`;
+    const color = colorMap[type] || '#fff';
+    card.style.color = color;
+    card.innerHTML = `
+        <img class="alert-avatar" src="${data.profilePictureUrl || 'https://placehold.co/60x60/333/fff?text=?'}" onerror="this.src='https://placehold.co/60x60/333/fff?text=?'">
+        <div class="alert-text">
+            <div class="name">${data.nickname || data.uniqueId || 'مشاهد'}</div>
+            <div class="action">${action}</div>
+        </div>
+        ${count ? `<div class="alert-count">${count}</div>` : ''}
+        <div class="alert-progress" style="color:${color};background:${color};"></div>
+    `;
+    container.prepend(card);
+    setTimeout(() => { card.classList.add('removing'); setTimeout(() => card.remove(), 400); }, 5000);
+    const cards = container.querySelectorAll('.alert-card');
+    if (cards.length > 5) { const old = cards[cards.length - 1]; old.classList.add('removing'); setTimeout(() => old.remove(), 400); }
+}
+
+function showMilestone(data, count) {
+    launchConfetti();
+    const banner = document.createElement('div');
+    banner.className = 'milestone-banner';
+    banner.innerHTML = `
+        <div class="milestone-content">
+            <div class="milestone-emoji">🏆</div>
+            <div class="milestone-title">${count.toLocaleString()} تكبيسة!</div>
+            <div class="milestone-sub">وصل إلى</div>
+            <div class="milestone-name">${data.nickname || data.uniqueId || 'مشاهد'}</div>
+        </div>
+    `;
+    document.body.appendChild(banner);
+    setTimeout(() => { banner.classList.add('removing'); setTimeout(() => banner.remove(), 400); }, 4000);
+}
+
+function launchConfetti() {
+    const colors = ['#ff0055','#00f0ff','#ffd700','#b026ff','#00ff88','#ff8c00'];
+    const container = document.getElementById('confetti-container');
+    for (let i = 0; i < 80; i++) {
+        const piece = document.createElement('div');
+        const color = colors[Math.floor(Math.random() * colors.length)];
+        const rot = Math.random() * 720;
+        const tx = Math.random() * 200 - 100;
+        piece.style.cssText = `position:absolute;width:${Math.random()*12+6}px;height:${Math.random()*6+4}px;background:${color};left:${Math.random()*100}%;top:-20px;border-radius:2px;animation:confettiFall${i} ${Math.random()*2+2}s ease-in forwards;transform:rotate(${Math.random()*360}deg);`;
+        const kf = document.createElement('style');
+        kf.textContent = `@keyframes confettiFall${i}{to{top:110%;transform:rotate(${rot}deg)translateX(${tx}px);opacity:0;}}`;
+        document.head.appendChild(kf);
+        container.appendChild(piece);
+        setTimeout(() => piece.remove(), 4000);
+    }
+}
+</script>
+</body>
+</html>
