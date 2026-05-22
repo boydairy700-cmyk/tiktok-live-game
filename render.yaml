@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: tiktok-live-game
+    env: node
+    region: oregon
+    plan: free
+    buildCommand: npm install
+    startCommand: node server.js
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
